@@ -21,12 +21,14 @@ namespace DiagnoseDashboard.Data
         public ProfileMessages alert = ProfileMessages.NULL;
         public ProfileMessages answer = ProfileMessages.NULL;
         private FaultSearch faultSearch;
+        private readonly RootCauseAnalyzer rootCauseAnalyzer;
         List<FaultData> decrease = new List<FaultData>();
         List<FaultData> decreaseParentID = new List<FaultData>();
 
-        public DiagnoseDashboardService(FaultSearch FaultSearch)
+        public DiagnoseDashboardService(FaultSearch FaultSearch, RootCauseAnalyzer RootCauseAnalyzer)
         {
             faultSearch = FaultSearch;
+            rootCauseAnalyzer = RootCauseAnalyzer;
             decrease = faultSearch.faultDatas.OrderByDescending(x => x.Priority).ToList();
             decreaseParentID = faultSearch.faultDatas.OrderByDescending(x => x.Priority).ToList();
         }
@@ -35,6 +37,18 @@ namespace DiagnoseDashboard.Data
         {
             diagnoses = await dashboardData.GetDiagnoses();
             await DiagnoseAnalyse();
+            RunRootCauseAnalysis();
+        }
+
+        private void RunRootCauseAnalysis()
+        {
+            rootCauseAnalyzer.ResetRootFaults(faultSearch.faultDatas);
+            rootCauseAnalyzer.PropagateFaults(faultSearch.faultDatas);
+            List<FaultData> rootCauses = rootCauseAnalyzer.DetectRootCauses(faultSearch.faultDatas);
+
+            FaultSearch.Led = rootCauses.Any();
+            Console.WriteLine("LED: " + FaultSearch.Led);
+            Console.WriteLine("Root fault(s): " + string.Join(", ", rootCauses.Select(fault => fault.Name)));
         }
 
         public async Task TreeSearchW(string fault)
