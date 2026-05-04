@@ -273,7 +273,6 @@
             {
                 await Task.Delay(1000);
                 await dashboardVM.GetDiagnoses();
-                faultSearch.RootFaultDetect(faultSearch.RootFaultDetectIndex());
                 await dashboardVM.PostLedRed();
                 await InvokeAsync(StateHasChanged);
             });
