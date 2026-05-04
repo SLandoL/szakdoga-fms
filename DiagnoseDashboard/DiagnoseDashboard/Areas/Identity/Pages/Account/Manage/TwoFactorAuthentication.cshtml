@@ -1,0 +1,58 @@
+﻿@page
+@model TwoFactorAuthenticationModel
+@inject IStringLocalizer<App> Localizer
+@{
+    ViewData["Title"] = @Localizer["Kétlépcsős hitelesítés"];
+    ViewData["ActivePage"] = ManageNavPages.TwoFactorAuthentication;
+}
+
+<partial name="_StatusMessage" for="StatusMessage" />
+<h4>@ViewData["Title"]</h4>
+@if (Model.Is2faEnabled)
+{
+    if (Model.RecoveryCodesLeft == 0)
+    {
+        <div class="alert alert-danger">
+            <strong>@Localizer["Önnek nincsenek helyreállítási kódjai."]</strong>
+            <p>@Localizer["Önnek"] <a asp-page="./GenerateRecoveryCodes">@Localizer["új helyreállítási kód készletet kell generálnia"]</a> @Localizer[", mielött betudna jelentkezni egy kód segítségével."]</p>
+        </div>
+    }
+    else if (Model.RecoveryCodesLeft == 1)
+    {
+        <div class="alert alert-danger">
+            <strong>You have 1 recovery code left.</strong>
+            <p>@Localizer["Ön létre tud hozni"] <a asp-page="./GenerateRecoveryCodes"></a>@Localizer["új helyreállítási kódkészletet"].</p>
+        </div>
+    }
+    else if (Model.RecoveryCodesLeft <= 3)
+    {
+        <div class="alert alert-warning">
+            <strong>@Localizer["Önnek összesen"] @Model.RecoveryCodesLeft @Localizer["helyreállítási kódja van."]</strong>
+            <p>@Localizer["Önnek gerálnia kellene egy"] <a asp-page="./GenerateRecoveryCodes"> @Localizer["új helyreállítási kódkészletet"]</a>.</p>
+        </div>
+    }
+
+    if (Model.IsMachineRemembered)
+    {
+        <form method="post" style="display: inline-block">
+            <button type="submit" class="btn btn-default">@Localizer["Ez a böngésző elfelejtése"]</button>
+        </form>
+    }
+    <a asp-page="./Disable2fa" class="btn btn-default">@Localizer["2FA Kikapcsolása"]</a>
+    <a asp-page="./GenerateRecoveryCodes" class="btn btn-default">@Localizer["Helyreállítási kódok visszaállítása"]</a>
+}
+
+<h5>Authenticator app</h5>
+@if (!Model.HasAuthenticator)
+{
+    <a id="enable-authenticator" asp-page="./EnableAuthenticator" class="btn btn-default">@Localizer["Hitelesítő alkalmazás hozzáadása"]</a>
+}
+else
+{
+    <a id="enable-authenticator" asp-page="./EnableAuthenticator" class="btn btn-default">@Localizer["Hitelesítő alkalmazás beállítása"]</a>
+    <a id="reset-authenticator" asp-page="./ResetAuthenticator" class="btn btn-default">@Localizer["A hitelesítő alkalmazás visszaállítás"]</a>
+}
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

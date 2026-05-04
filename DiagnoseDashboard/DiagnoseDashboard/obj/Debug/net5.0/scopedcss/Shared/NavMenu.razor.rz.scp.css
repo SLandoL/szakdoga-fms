@@ -1,0 +1,112 @@
+.navbar-toggler[b-0lxwplne1m] {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.top-row[b-0lxwplne1m] {
+    height: 3.5rem;
+    background-color: rgba(0,0,0,0.4);
+}
+
+.navbar-brand[b-0lxwplne1m] {
+    font-size: 1.1rem;
+}
+
+.oi[b-0lxwplne1m] {
+    width: 2rem;
+    font-size: 1.1rem;
+    vertical-align: text-top;
+    top: -2px;
+}
+
+.shadow_img[b-0lxwplne1m] {
+    box-shadow: -4px -4px 2px #adff2f;
+    -moz-box-shadow: -4px -4px 2px #adff2f;
+    -webkit-box-shadow: -4px -4px 2px #adff2f;
+    background-color: white;
+    border-radius: 5px;
+    border: 1px;
+}
+
+.tilte_shadow[b-0lxwplne1m] {
+    text-shadow: 2px 2px 4px #adff2f;
+}
+
+.nav-item[b-0lxwplne1m] {
+    font-size: 0.9rem;
+    padding-bottom: 0.5rem;
+}
+
+    .nav-item:first-of-type[b-0lxwplne1m] {
+        padding-top: 1rem;
+    }
+
+    .nav-item:last-of-type[b-0lxwplne1m] {
+        padding-bottom: 1rem;
+    }
+
+    .nav-item[b-0lxwplne1m]  a {
+        color: #d7d7d7;
+        border-radius: 4px;
+        height: 3rem;
+        display: flex;
+        align-items: center;
+        line-height: 3rem;
+    }
+
+.nav-item[b-0lxwplne1m]  a.active {
+    background-color: rgba(255,255,255,0.25);
+    color: white;
+}
+
+.nav-item[b-0lxwplne1m]  a:hover {
+    background-color: rgba(255,255,255,0.1);
+    color: white;
+}
+
+@media (min-width: 641px) {
+    .navbar-toggler[b-0lxwplne1m] {
+        display: none;
+    }
+
+    .collapse[b-0lxwplne1m] {
+        /* Never collapse the sidebar for wide screens */
+        display: block;
+    }
+}
+
+.invis_btn[b-0lxwplne1m] {
+    background: transparent;
+    border: none;
+    color: #d7d7d7;
+}
+
+    .invis_btn:active[b-0lxwplne1m] {
+        border: none;
+    }
+
+.broker[b-0lxwplne1m] {
+    position: absolute;
+    bottom: 0px;
+    width: 100%
+}
+
+@media (min-width : 640px) {
+    .alert_position[b-0lxwplne1m] {
+        bottom: 5rem;
+        position: absolute;
+    }
+}
+
+@media (max-width: 350px) {
+    .navbar-brand[b-0lxwplne1m]{
+        font-size: 0.8rem;
+    }
+}
+
+@media (max-width: 640px) {
+    .broker[b-0lxwplne1m] {
+        position: unset;
+        bottom: unset;
+        width: 100%
+    }
+}

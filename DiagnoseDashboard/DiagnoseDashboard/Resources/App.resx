@@ -1,0 +1,535 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!-- 
+    Microsoft ResX Schema 
+    
+    Version 2.0
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
+    associated with the data types.
+    
+    Example:
+    
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+        <value>[base64 mime encoded serialized .NET Framework object]</value>
+    </data>
+    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+        <comment>This is a comment</comment>
+    </data>
+                
+    There are any number of "resheader" rows that contain simple 
+    name/value pairs.
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
+    mimetype set.
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
+    extensible. For a given mimetype the value must be set accordingly:
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
+    read any of the formats listed below.
+    
+    mimetype: application/x-microsoft.net.object.binary.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
+            : and then encoded with base64 encoding.
+    
+    mimetype: application/x-microsoft.net.object.soap.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.bytearray.base64
+    value   : The object must be serialized into a byte array 
+            : using a System.ComponentModel.TypeConverter
+            : and then encoded with base64 encoding.
+    -->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name=", mielött betudna jelentkezni egy kód segítségével." xml:space="preserve">
+    <value>, mielött betudna jelentkezni egy kód segítségével.</value>
+  </data>
+  <data name="2FA Kikapcsolása" xml:space="preserve">
+    <value>2FA Kikapcsolása</value>
+  </data>
+  <data name="A" xml:space="preserve">
+    <value>A</value>
+  </data>
+  <data name="A 2FA letiltása" xml:space="preserve">
+    <value>A 2FA letiltása</value>
+  </data>
+  <data name="A 2FA letiltása nem módosítja a hitelesítő alkalmazásokban használt kulcsokat. Ha módosítani szeretné a hitelesítő alkalmazásban használt kulcsot, alaphelyzetbe kell állítania a hitelesítő kulcsokat." xml:space="preserve">
+    <value>A 2FA letiltása nem módosítja a hitelesítő alkalmazásokban használt kulcsokat. Ha módosítani szeretné a hitelesítő alkalmazásban használt kulcsot, alaphelyzetbe kell állítania a hitelesítő kulcsokat.</value>
+  </data>
+  <data name="A hitelesítő alkalmazás használatához kövesse az alábbi lépéseket:" xml:space="preserve">
+    <value>A hitelesítő alkalmazás használatához kövesse az alábbi lépéseket:</value>
+  </data>
+  <data name="A hitelesítő alkalmazás konfigurálása" xml:space="preserve">
+    <value>A hitelesítő alkalmazás konfigurálása</value>
+  </data>
+  <data name="A hitelesítő alkalmazás visszaállítása" xml:space="preserve">
+    <value>A hitelesítő alkalmazás visszaállítása</value>
+  </data>
+  <data name="A jelszavad vissza lett állítva. Kérjük," xml:space="preserve">
+    <value>A jelszavad vissza lett állítva. Kérjük,</value>
+  </data>
+  <data name="Adjon hozzá egy másik szolgáltatást a bejelentkezéshez." xml:space="preserve">
+    <value>Adjon hozzá egy másik szolgáltatást a bejelentkezéshez.</value>
+  </data>
+  <data name="AVG Kocsi" xml:space="preserve">
+    <value>AVG Kocsi</value>
+  </data>
+  <data name="Az adatok törlésével véglegesen eltávolítja fiókját, és ezeket nem lehet visszaállítani." xml:space="preserve">
+    <value>Az adatok törlésével véglegesen eltávolítja fiókját, és ezeket nem lehet visszaállítani.</value>
+  </data>
+  <data name="Az új helyreállítási kódok generálása nem módosítja a hitelesítő alkalmazásokban használt kulcsokat. Ha módosítani szeretné a hitelesítő alkalmazásban használt kulcsot, alaphelyzetbe kell állítania a hitelesítő kulcsokat." xml:space="preserve">
+    <value>Az új helyreállítási kódok generálása nem módosítja a hitelesítő alkalmazásokban használt kulcsokat. Ha módosítani szeretné a hitelesítő alkalmazásban használt kulcsot, alaphelyzetbe kell állítania a hitelesítő kulcsokat.</value>
+  </data>
+  <data name="be tud jelentkezni" xml:space="preserve">
+    <value>be tud jelentkezni</value>
+  </data>
+  <data name="Bejelentkezés" xml:space="preserve">
+    <value>Bejelentkezés</value>
+  </data>
+  <data name="Bejelentkezését hitelesítő alkalmazás védi. Írja be hitelesítő kódját alább." xml:space="preserve">
+    <value>Bejelentkezését hitelesítő alkalmazás védi. Írja be hitelesítő kódját alább.</value>
+  </data>
+  <data name="E-mail cím kezelése" xml:space="preserve">
+    <value>E-mail cím kezelése</value>
+  </data>
+  <data name="E-mail megerősítés" xml:space="preserve">
+    <value>E-mail megerősítve</value>
+  </data>
+  <data name="E-mail megváltoztatása" xml:space="preserve">
+    <value>E-mail megváltoztatása</value>
+  </data>
+  <data name="Elfelejtett jelszó megerősítése" xml:space="preserve">
+    <value>Elfelejtett jelszó megerősítése</value>
+  </data>
+  <data name="Elfelejtette a jelszavát?" xml:space="preserve">
+    <value>Elfelejtette a jelszavát?</value>
+  </data>
+  <data name="Elküld" xml:space="preserve">
+    <value>Elküld</value>
+  </data>
+  <data name="Ellenőrzés" xml:space="preserve">
+    <value>Ellenőrzés</value>
+  </data>
+  <data name="Ellenőrző kód visszaállítása" xml:space="preserve">
+    <value>Ellenőrző kód visszaállítása</value>
+  </data>
+  <data name="Eltávolítás" xml:space="preserve">
+    <value>Eltávolítás</value>
+  </data>
+  <data name="Elérhető" xml:space="preserve">
+    <value>Elérhető</value>
+  </data>
+  <data name="Elérhető az MQTT Broker!" xml:space="preserve">
+    <value>Elérhető az MQTT Broker!</value>
+  </data>
+  <data name="Error" xml:space="preserve">
+    <value>Error</value>
+  </data>
+  <data name="Error ID:" xml:space="preserve">
+    <value>Error ID:</value>
+  </data>
+  <data name="Erősítse meg az e-mail módosítást" xml:space="preserve">
+    <value>Erősítse meg az e-mail módosítást</value>
+  </data>
+  <data name="Ez a böngésző elfelejtése" xml:space="preserve">
+    <value>Ez a böngésző elfelejtése</value>
+  </data>
+  <data name="Ez a fiók zárolva van. Kérjük, próbálja újra később." xml:space="preserve">
+    <value>Ez a fiók zárolva van. Kérjük, próbálja újra később.</value>
+  </data>
+  <data name="Ez a folyamat letiltja a 2FA-t mindaddig, amíg nem ellenőrzi a hitelesítő alkalmazást. Ha nem fejezi be a hitelesítő alkalmazás konfigurációját, elveszítheti hozzáférését fiókjához." xml:space="preserve">
+    <value>Ez a folyamat letiltja a 2FA-t mindaddig, amíg nem ellenőrzi a hitelesítő alkalmazást. Ha nem fejezi be a hitelesítő alkalmazás konfigurációját, elveszítheti hozzáférését fiókjához.</value>
+  </data>
+  <data name="Ez a művelet csak a 2FA-t tiltja le." xml:space="preserve">
+    <value>Ez a művelet csak a 2FA-t tiltja le.</value>
+  </data>
+  <data name="Ezeket a kódokat tegye biztonságos helyre." xml:space="preserve">
+    <value>Ezeket a kódokat tegye biztonságos helyre.</value>
+  </data>
+  <data name="Fejlesztési mód" xml:space="preserve">
+    <value>Fejlesztési mód</value>
+  </data>
+  <data name="Fejlesztői" xml:space="preserve">
+    <value>Fejlesztői</value>
+  </data>
+  <data name="Fiókja olyan személyes adatokat tartalmaz, amelyeket Ön adott meg nekünk. Ez az oldal lehetővé teszi az adatok letöltését vagy törlését." xml:space="preserve">
+    <value>Fiókja olyan személyes adatokat tartalmaz, amelyeket Ön adott meg nekünk. Ez az oldal lehetővé teszi az adatok letöltését vagy törlését.</value>
+  </data>
+  <data name="fiókját" xml:space="preserve">
+    <value>fiókját</value>
+  </data>
+  <data name="Fő lehetséges hibaforrások" xml:space="preserve">
+    <value>Fő lehetséges hibaforrások</value>
+  </data>
+  <data name="Google Authenticator ehhez" xml:space="preserve">
+    <value>Google Authenticator ehhez</value>
+  </data>
+  <data name="Gyártósor" xml:space="preserve">
+    <value>Gyártósor</value>
+  </data>
+  <data name="Gyártósor text" xml:space="preserve">
+    <value>A tömegtermelés lehetővé tette a vállalatoknak, hogy az azonos termékeket nagyon gyorsan nagy tételben előállíthassák.</value>
+  </data>
+  <data name="Gyökér hiba" xml:space="preserve">
+    <value>Gyökér hiba</value>
+  </data>
+  <data name="Ha elveszíti eszközét, és nem rendelkezik a helyreállítási kódokkal, akkor elveszíti hozzáférését fiókjához." xml:space="preserve">
+    <value>Ha elveszíti eszközét, és nem rendelkezik a helyreállítási kódokkal, akkor elveszíti hozzáférését fiókjához.</value>
+  </data>
+  <data name="Ha visszaállítja a hitelesítő kulcsot, a hitelesítő alkalmazás nem fog működni, amíg újra nem konfigurálja." xml:space="preserve">
+    <value>Ha visszaállítja a hitelesítő kulcsot, a hitelesítő alkalmazás nem fog működni, amíg újra nem konfigurálja.</value>
+  </data>
+  <data name="Használjon helyi fiókot a bejelentkezéshez." xml:space="preserve">
+    <value>Használjon helyi fiókot a bejelentkezéshez.</value>
+  </data>
+  <data name="Használjon másik szolgáltatást a bejelentkezéshez." xml:space="preserve">
+    <value>Használjon másik szolgáltatást a bejelentkezéshez.</value>
+  </data>
+  <data name="Helyreállítási kóddal jelentkezett be. Ezt a bejelentkezést nem jegyezzük meg, amíg nem adja meg&#xD;&#xA;    egy hitelesítő alkalmazáskódot a bejelentkezéskor, vagy tiltsa le a 2FA-t, és jelentkezzen be újra." xml:space="preserve">
+    <value>Helyreállítási kóddal jelentkezett be. Ezt a bejelentkezést nem jegyezzük meg, amíg nem adja meg
+    egy hitelesítő alkalmazáskódot a bejelentkezéskor, vagy tiltsa le a 2FA-t, és jelentkezzen be újra.</value>
+  </data>
+  <data name="helyreállítási kódja van." xml:space="preserve">
+    <value>helyreállítási kódja van.</value>
+  </data>
+  <data name="Helyreállítási kódok" xml:space="preserve">
+    <value>Helyreállítási kódok</value>
+  </data>
+  <data name="Helyreállítási kódok generálása" xml:space="preserve">
+    <value>Helyreállítási kódok generálása</value>
+  </data>
+  <data name="Helyreállítási kódok visszaállítása" xml:space="preserve">
+    <value>Helyreállítási kódok visszaállítása</value>
+  </data>
+  <data name="Hiba" xml:space="preserve">
+    <value>Hiba</value>
+  </data>
+  <data name="Hiba monitorozás" xml:space="preserve">
+    <value>Hiba monitorozás</value>
+  </data>
+  <data name="Hiba történt a kérése feldolgozása során." xml:space="preserve">
+    <value>Hiba történt a kérése feldolgozása során.</value>
+  </data>
+  <data name="Hibamenedzsment" xml:space="preserve">
+    <value>Hibamenedzsment</value>
+  </data>
+  <data name="Hitelesítési kulcs visszaállítása" xml:space="preserve">
+    <value>Hitelesítési kulcs visszaállítása</value>
+  </data>
+  <data name="Hitelesítő alkalmazás beállítása" xml:space="preserve">
+    <value>Hitelesítő alkalmazás beállítása</value>
+  </data>
+  <data name="Hitelesítő alkalmazás hozzáadása" xml:space="preserve">
+    <value>Hitelesítő alkalmazás hozzáadása</value>
+  </data>
+  <data name="Igazoló kód" xml:space="preserve">
+    <value>Igazoló kód</value>
+  </data>
+  <data name="Jelszó beállítása" xml:space="preserve">
+    <value>Jelszó beállítása</value>
+  </data>
+  <data name="Jelszó megváltoztatása" xml:space="preserve">
+    <value>Jelszó megváltoztatása</value>
+  </data>
+  <data name="Jelszó mentése" xml:space="preserve">
+    <value>Jelszó mentése</value>
+  </data>
+  <data name="Jelszó visszaállítása" xml:space="preserve">
+    <value>Jelszó visszaállítása</value>
+  </data>
+  <data name="Jelszó visszaállításának megerősítése" xml:space="preserve">
+    <value>Jelszó visszaállításának megerősítése</value>
+  </data>
+  <data name="Kapcsolodás MQTT-hez" xml:space="preserve">
+    <value>Kapcsolodás MQTT-hez</value>
+  </data>
+  <data name="kattintson ide a bejelentkezéshez" xml:space="preserve">
+    <value>kattintson ide a bejelentkezéshez</value>
+  </data>
+  <data name="Kattintson ide a kijelentkezéshez" xml:space="preserve">
+    <value>Kattintson ide a kijelentkezéshez</value>
+  </data>
+  <data name="Kezdőoldal" xml:space="preserve">
+    <value>Kezdőoldal</value>
+  </data>
+  <data name="Kezelje külső bejelentkezéseit" xml:space="preserve">
+    <value>Kezelje külső bejelentkezéseit</value>
+  </data>
+  <data name="Kijelentkezés" xml:space="preserve">
+    <value>Kijelentkezés</value>
+  </data>
+  <data name="Kiválasztás" xml:space="preserve">
+    <value>Kiválasztás</value>
+  </data>
+  <data name="Kocsi elérhető" xml:space="preserve">
+    <value>Kocsi elérhető</value>
+  </data>
+  <data name="Kocsi szenzork" xml:space="preserve">
+    <value>Targonca szenzork</value>
+  </data>
+  <data name="Kocsi árammérő elérhetőség" xml:space="preserve">
+    <value>Kocsi árammérő elérhetőség</value>
+  </data>
+  <data name="Kocsi üvegek esp" xml:space="preserve">
+    <value>Kocsi üvegek esp</value>
+  </data>
+  <data name="Komm. központ árammérő elérhető" xml:space="preserve">
+    <value>Komm. központ árammérő elérhető</value>
+  </data>
+  <data name="Kommunikáció" xml:space="preserve">
+    <value>Kommunikáció</value>
+  </data>
+  <data name="Kommunikáció text" xml:space="preserve">
+    <value>Kommunikáció nélkül a külön termelési területek nem kapnak információt egymástól, ez ugyanúgy a termelés leállásához vezethet.</value>
+  </data>
+  <data name="Kommunikációs központ" xml:space="preserve">
+    <value>Kommunikációs központ</value>
+  </data>
+  <data name="Kommunikációs központ elérhető" xml:space="preserve">
+    <value>Kommunikációs központ elérhető</value>
+  </data>
+  <data name="Kérjük, ellenőrizze e-mailjét a jelszó visszaállításához." xml:space="preserve">
+    <value>Kérjük, ellenőrizze e-mailjét a jelszó visszaállításához.</value>
+  </data>
+  <data name="Kétlépcsős hitelesítés" xml:space="preserve">
+    <value>Kétlépcsős hitelesítés</value>
+  </data>
+  <data name="Kétlépcsős hitelesítés (2FA) letiltása" xml:space="preserve">
+    <value>Kétlépcsős hitelesítés (2FA) letiltása</value>
+  </data>
+  <data name="Kéttényezős hitelesítési (2FA) helyreállítási kódok létrehozása" xml:space="preserve">
+    <value>Kéttényezős hitelesítési (2FA) helyreállítási kódok létrehozása</value>
+  </data>
+  <data name="környezetre váltás részletesebb információkat jelenít meg a felmerült hibáról." xml:space="preserve">
+    <value>környezetre váltás részletesebb információkat jelenít meg a felmerült hibáról.</value>
+  </data>
+  <data name="Letöltés" xml:space="preserve">
+    <value>Letöltés</value>
+  </data>
+  <data name="Megerősítő e-mail küldése" xml:space="preserve">
+    <value>Megerősítő e-mail küldése</value>
+  </data>
+  <data name="Megerősítő e-mail újraküldése" xml:space="preserve">
+    <value>Megerősítő e-mail újraküldése</value>
+  </data>
+  <data name="Mentés" xml:space="preserve">
+    <value>Mentés</value>
+  </data>
+  <data name="Miután beszkennelte a QR-kódot, vagy beírta a fenti kulcsot, a kétfaktoros hitelesítési alkalmazás egyedi kódot biztosít Önnek. Írja be a kódot az alábbi megerősítő mezőbe." xml:space="preserve">
+    <value>Miután beszkennelte a QR-kódot, vagy beírta a fenti kulcsot, a kétfaktoros hitelesítési alkalmazás egyedi kódot biztosít Önnek. Írja be a kódot az alábbi megerősítő mezőbe.</value>
+  </data>
+  <data name="Nem elérhető" xml:space="preserve">
+    <value>Nem elérhető</value>
+  </data>
+  <data name="Nem érhető el az MQTT Broker!" xml:space="preserve">
+    <value>Nem érhető el az MQTT Broker!</value>
+  </data>
+  <data name="Nincs helyi felhasználóneve/jelszava ehhez az oldalhoz. Adjon hozzá egy helyi fiókot, hogy külső bejelentkezés nélkül is bejelentkezhessen." xml:space="preserve">
+    <value>Nincs helyi felhasználóneve/jelszava ehhez az oldalhoz. Adjon hozzá egy helyi fiókot, hogy külső bejelentkezés nélkül is bejelentkezhessen.</value>
+  </data>
+  <data name="Nincs hozzáférése ehhez az erőforráshoz." xml:space="preserve">
+    <value>Nincs hozzáférése ehhez az erőforráshoz.</value>
+  </data>
+  <data name="Nincs hozzáférése hitelesítő eszközéhez? Helyreállítási kódda" xml:space="preserve">
+    <value>Nincs hozzáférése hitelesítő eszközéhez? Helyreállítási kódda</value>
+  </data>
+  <data name="Nyelv:" xml:space="preserve">
+    <value>Nyelv: </value>
+  </data>
+  <data name="Olvassa be a QR-kódot, vagy írja be ezt a kulcsot a kétfaktoros hitelesítő alkalmazásba. A szóközök nem számítanak" xml:space="preserve">
+    <value>Olvassa be a QR-kódot, vagy írja be ezt a kulcsot a kétfaktoros hitelesítő alkalmazásba. A szóközök nem számítanak</value>
+  </data>
+  <data name="Raktár RFID elérhető" xml:space="preserve">
+    <value>Raktár RFID elérhető</value>
+  </data>
+  <data name="Regisztráció megerősítése" xml:space="preserve">
+    <value>Regisztráció megerősítése</value>
+  </data>
+  <data name="Regisztráljon új felhasználóként" xml:space="preserve">
+    <value>Regisztráljon új felhasználóként</value>
+  </data>
+  <data name="Regisztrált bejelentkezések" xml:space="preserve">
+    <value>Regisztrált bejelentkezések</value>
+  </data>
+  <data name="Regisztrálás" xml:space="preserve">
+    <value>Regisztrálás</value>
+  </data>
+  <data name="Rendszer" xml:space="preserve">
+    <value>Rendszer</value>
+  </data>
+  <data name="Rendszer kommunikáció" xml:space="preserve">
+    <value>Rendszer kommunikáció</value>
+  </data>
+  <data name="RFID olvasó" xml:space="preserve">
+    <value>RFID olvasó</value>
+  </data>
+  <data name="Segítség" xml:space="preserve">
+    <value>Segítség</value>
+  </data>
+  <data name="Szalag szenzorok" xml:space="preserve">
+    <value>Szalag szenzorok</value>
+  </data>
+  <data name="Személyes adatok törlése" xml:space="preserve">
+    <value>Személyes adatok törlése</value>
+  </data>
+  <data name="Tartály" xml:space="preserve">
+    <value>Tartály</value>
+  </data>
+  <data name="Tartály esp" xml:space="preserve">
+    <value>Tartály esp</value>
+  </data>
+  <data name="Tartály szenzorok" xml:space="preserve">
+    <value>Tartály szenzorok</value>
+  </data>
+  <data name="Tartály árammérő elérhető" xml:space="preserve">
+    <value>Tartály árammérő elérhető</value>
+  </data>
+  <data name="Töltse le adatait" xml:space="preserve">
+    <value>Töltse le adatait</value>
+  </data>
+  <data name="Töltsön le egy kétfaktoros hitelesítő alkalmazást, például a Microsoft Authenticator alkalmazást" xml:space="preserve">
+    <value>Töltsön le egy kétfaktoros hitelesítő alkalmazást, például a Microsoft Authenticator alkalmazást</value>
+  </data>
+  <data name="Törlés" xml:space="preserve">
+    <value>Törlés</value>
+  </data>
+  <data name="Törölje az adatokat és zárja be a fiókomat" xml:space="preserve">
+    <value>Törölje az adatokat és zárja be a fiókomat</value>
+  </data>
+  <data name="vagy" xml:space="preserve">
+    <value>vagy</value>
+  </data>
+  <data name="Visszaállítás" xml:space="preserve">
+    <value>Visszaállítás</value>
+  </data>
+  <data name="Válasszon" xml:space="preserve">
+    <value>Válasszon</value>
+  </data>
+  <data name="Állítsd be a jelszavad" xml:space="preserve">
+    <value>Állítsd be a jelszavad</value>
+  </data>
+  <data name="Állítsd vissza a jelszavad." xml:space="preserve">
+    <value>Állítsd vissza a jelszavad.</value>
+  </data>
+  <data name="Áramellátás" xml:space="preserve">
+    <value>Áramellátás</value>
+  </data>
+  <data name="Áramellátás text" xml:space="preserve">
+    <value>Egy gyárban a termelésre nézve egyértelműen legrosszab eshetőség, ha a gépek állnak. Mert ez a probléma leállást okoz a termelésben</value>
+  </data>
+  <data name="és" xml:space="preserve">
+    <value>és</value>
+  </data>
+  <data name="Írd be az email címed." xml:space="preserve">
+    <value>Írd be az email címed.</value>
+  </data>
+  <data name="Ön ki lett zárva" xml:space="preserve">
+    <value>Ön ki lett zárva</value>
+  </data>
+  <data name="Ön létre tud hozni" xml:space="preserve">
+    <value>Ön létre tud hozni</value>
+  </data>
+  <data name="Önnek" xml:space="preserve">
+    <value>Önnek</value>
+  </data>
+  <data name="Önnek gerálnia kellene egy" xml:space="preserve">
+    <value>Önnek gerálnia kellene egy</value>
+  </data>
+  <data name="Önnek nincsenek helyreállítási kódjai." xml:space="preserve">
+    <value>Önnek nincsenek helyreállítási kódjai.</value>
+  </data>
+  <data name="Önnek összesen" xml:space="preserve">
+    <value>Önnek összesen</value>
+  </data>
+  <data name="Új felhasználó létrehozása." xml:space="preserve">
+    <value>Új felhasználó létrehozása.</value>
+  </data>
+  <data name="új helyreállítási kód készletet kell generálnia" xml:space="preserve">
+    <value>új helyreállítási kód készletet kell generálnia</value>
+  </data>
+  <data name="új helyreállítási kódkészletet" xml:space="preserve">
+    <value>új helyreállítási kódkészletet</value>
+  </data>
+  <data name="Új jelszó" xml:space="preserve">
+    <value>Új jelszó</value>
+  </data>
+  <data name="Újraküldés" xml:space="preserve">
+    <value>Újraküldés</value>
+  </data>
+</root>

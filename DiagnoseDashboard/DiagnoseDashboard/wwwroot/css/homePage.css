@@ -1,0 +1,98 @@
+﻿/*Container*/
+.service {
+    width: 100%;
+    padding: 30px 0px;
+}
+.body{
+    background-color: transparent;
+}
+
+
+
+/*Fő cím*/
+.title h2 {
+    font-size: 75px;
+    width: 100%;
+    margin: 30px auto;
+    text-align: center;
+    background-image: linear-gradient(to right, #adff2f 20%, #30d5c8);
+    background-size: 100%;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    -webkit-text-stroke: 2px;
+    -webkit-text-stroke-color: darkgreen;
+}
+
+.box {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 400px;
+    gap: 10px;
+}
+
+/*Kártya*/
+.cards {
+    height: 400px;
+    width: 30%;
+    padding: 20px 35px;
+    background: #2a2a2a;
+    border-radius: 20px;
+    margin: 15px;
+    position: relative;
+    overflow: hidden;
+    text-align: center;
+    box-shadow: rgb(38, 57, 77) 0px 20px 30px -10px;
+}
+
+/*Kártya ikonok*/
+.cards i {
+    font-size: 50px;
+    display: block;
+    text-align: center;
+    margin: 25px 0px;
+    color: #adff2f;
+}
+
+/*Kártya cím*/
+.card_tilte {
+    color: white;
+    font-size: 23px;
+    margin-bottom: 15px;
+}
+
+/*Kártya szöveg*/
+.pra p {
+    color: #90ee90;
+    font-size: 16px;
+    line-height: 27px;
+    margin-bottom: 10px;
+
+}
+
+@media screen and (max-width: 1160px){
+    .box {
+        width: 100%;
+        display: block;
+        margin-bottom: 20px;
+    }
+    .cards {
+        width: auto;
+    }
+}
+
+.box:after{
+    content:"";
+    display: table;
+    clear: both;
+}
+
+.design_line {
+    border-top: 10px solid;
+    height: 20px;
+    display: block;
+    z-index: -1;
+    background-image: linear-gradient(transparent, transparent), linear-gradient(to right, #adff2f, #30d5c8) !important;
+    background-origin: border-box;
+    background-clip: content-box, border-box;
+}

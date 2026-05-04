@@ -1,0 +1,34 @@
+﻿@page
+@model DeletePersonalDataModel
+@inject IStringLocalizer<App> Localizer
+@{
+    ViewData["Title"] = @Localizer["Személyes adatok törlése"];
+    ViewData["ActivePage"] = ManageNavPages.PersonalData;
+}
+
+<h4>@ViewData["Title"]</h4>
+
+<div class="alert alert-warning" role="alert">
+    <p>
+        <strong>@Localizer["Az adatok törlésével véglegesen eltávolítja fiókját, és ezeket nem lehet visszaállítani."]</strong>
+    </p>
+</div>
+
+<div>
+    <form id="delete-user" method="post" class="form-group">
+        <div asp-validation-summary="All" class="text-danger"></div>
+        @if (Model.RequirePassword)
+        {
+            <div class="form-group">
+                <label asp-for="Input.Password"></label>
+                <input asp-for="Input.Password" class="form-control" />
+                <span asp-validation-for="Input.Password" class="text-danger"></span>
+            </div>
+        }
+        <button class="btn btn-danger" type="submit">@Localizer["Törölje az adatokat és zárja be a fiókomat"]</button>
+    </form>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

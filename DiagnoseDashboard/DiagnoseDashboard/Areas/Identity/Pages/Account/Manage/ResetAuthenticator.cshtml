@@ -1,0 +1,24 @@
+﻿@page
+@model ResetAuthenticatorModel
+@inject IStringLocalizer<App> Localizer
+@{
+    ViewData["Title"] = @Localizer["Hitelesítési kulcs visszaállítása"];
+    ViewData["ActivePage"] = ManageNavPages.TwoFactorAuthentication;
+}
+
+<partial name="_StatusMessage" for="StatusMessage" />
+<h4>@ViewData["Title"]</h4>
+<div class="alert alert-warning" role="alert">
+    <p>
+        <span class="glyphicon glyphicon-warning-sign"></span>
+        <strong>@Localizer["Ha visszaállítja a hitelesítő kulcsot, a hitelesítő alkalmazás nem fog működni, amíg újra nem konfigurálja."]</strong>
+    </p>
+    <p>
+        @Localizer["Ez a folyamat letiltja a 2FA-t mindaddig, amíg nem ellenőrzi a hitelesítő alkalmazást. Ha nem fejezi be a hitelesítő alkalmazás konfigurációját, elveszítheti hozzáférését fiókjához."]
+    </p>
+</div>
+<div>
+    <form id="reset-authenticator-form" method="post" class="form-group">
+        <button id="reset-authenticator-button" class="btn btn-danger" type="submit">@Localizer["Hitelesítési kulcs visszaállítása"]</button>
+    </form>
+</div>

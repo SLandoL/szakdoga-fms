@@ -1,0 +1,28 @@
+﻿@page
+@model PersonalDataModel
+@inject IStringLocalizer<App> Localizer
+@{
+    ViewData["Title"] = @Localizer["Személyes adatok"];
+    ViewData["ActivePage"] = ManageNavPages.PersonalData;
+}
+
+<h4>@ViewData["Title"]</h4>
+
+<div class="row">
+    <div class="col-md-6">
+        <p>@Localizer["Fiókja olyan személyes adatokat tartalmaz, amelyeket Ön adott meg nekünk. Ez az oldal lehetővé teszi az adatok letöltését vagy törlését."]</p>
+        <p>
+            <strong>@Localizer["Az adatok törlésével véglegesen eltávolítja fiókját, és ezeket nem lehet visszaállítani."]</strong>
+        </p>
+        <form id="download-data" asp-page="DownloadPersonalData" method="post" class="form-group">
+            <button class="btn btn-primary" type="submit">@Localizer["Letöltés"]</button>
+        </form>
+        <p>
+            <a id="delete" asp-page="DeletePersonalData" class="btn btn-secondary">@Localizer["Törlés"]</a>
+        </p>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

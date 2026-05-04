@@ -1,0 +1,54 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "C:\\Users\\vivob\\Documents\\GitHub\\FMS\\DiagnoseService\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{BAE88DD2-A64F-4832-A623-8D2BC7FA8F5B}|DiagnoseService\\DiagnoseService.csproj|c:\\users\\vivob\\documents\\github\\fms\\diagnoseservice\\diagnoseservice\\migrations\\20220311112516_adddb.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{BAE88DD2-A64F-4832-A623-8D2BC7FA8F5B}|DiagnoseService\\DiagnoseService.csproj|solutionrelative:diagnoseservice\\migrations\\20220311112516_adddb.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{BAE88DD2-A64F-4832-A623-8D2BC7FA8F5B}|DiagnoseService\\DiagnoseService.csproj|c:\\users\\vivob\\documents\\github\\fms\\diagnoseservice\\diagnoseservice\\controllers\\diagnosecontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{BAE88DD2-A64F-4832-A623-8D2BC7FA8F5B}|DiagnoseService\\DiagnoseService.csproj|solutionrelative:diagnoseservice\\controllers\\diagnosecontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 1,
+          "Children": [
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "DiagnoseController.cs",
+              "DocumentMoniker": "C:\\Users\\vivob\\Documents\\GitHub\\FMS\\DiagnoseService\\DiagnoseService\\Controllers\\DiagnoseController.cs",
+              "RelativeDocumentMoniker": "DiagnoseService\\Controllers\\DiagnoseController.cs",
+              "ToolTip": "C:\\Users\\vivob\\Documents\\GitHub\\FMS\\DiagnoseService\\DiagnoseService\\Controllers\\DiagnoseController.cs",
+              "RelativeToolTip": "DiagnoseService\\Controllers\\DiagnoseController.cs",
+              "ViewState": "AgIAAEUAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-16T13:59:50.461Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "20220311112516_AddDB.cs",
+              "DocumentMoniker": "C:\\Users\\vivob\\Documents\\GitHub\\FMS\\DiagnoseService\\DiagnoseService\\Migrations\\20220311112516_AddDB.cs",
+              "RelativeDocumentMoniker": "DiagnoseService\\Migrations\\20220311112516_AddDB.cs",
+              "ToolTip": "C:\\Users\\vivob\\Documents\\GitHub\\FMS\\DiagnoseService\\DiagnoseService\\Migrations\\20220311112516_AddDB.cs",
+              "RelativeToolTip": "DiagnoseService\\Migrations\\20220311112516_AddDB.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-16T13:59:11.803Z",
+              "EditorCaption": ""
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

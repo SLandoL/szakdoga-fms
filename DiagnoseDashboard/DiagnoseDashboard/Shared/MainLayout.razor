@@ -1,0 +1,22 @@
+﻿@inject IStringLocalizer<App> Localizer
+@inherits LayoutComponentBase
+
+<div class="page main_background">
+    <div class="sidebar">
+        <NavMenu />
+    </div>
+
+    <div class="main">
+        <div class="top-row px-4 auth" id="sidebar_color">
+            <span class="pr-2 nav_text_color"> @Localizer["Nyelv:"]</span><ChooseLanguage />
+            <LoginDisplay />
+            <a class="nav_text_color" href="https://github.com/bmetk/FMS/blob/main/README.md" target="_blank"><span class="oi oi-info" style="color: #adff2f"></span> @Localizer["Segítség"]</a>
+        </div>
+
+        <div class="content p-0">
+            @Body
+        </div>
+    </div>
+</div>
+
+<BlazoredToasts/>

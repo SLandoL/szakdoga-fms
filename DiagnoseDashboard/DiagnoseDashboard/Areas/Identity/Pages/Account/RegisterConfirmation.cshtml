@@ -1,0 +1,16 @@
+﻿@page
+@model RegisterConfirmationModel
+@inject IStringLocalizer<App> Localizer
+@{
+    ViewData["Title"] = @Localizer["Regisztráció megerősítése"];
+}
+
+<h1>@ViewData["Title"]</h1>
+@{
+    if (@Model.DisplayConfirmAccountLink)
+    {
+<p>
+    @Localizer["Általában ezt e-mailben küldik el:"] <a id="confirm-link" href="@Model.EmailConfirmationUrl">@Localizer["Kattintson ide a fiók megerősítéséhez"].</a>
+</p>
+    }
+}

@@ -1,0 +1,45 @@
+﻿@inject NavigationManager NavigationManager
+@inject IConfiguration Configuration
+@inject IStringLocalizer<App> Localizer
+
+@if (cultures != null)
+{
+    <form class="form-inline">
+        <select class="form-control mr-2" @bind="selectedCulture">
+            <option class="disabled green"> @Localizer["Válasszon..."]</option>
+            @foreach (var culture in cultures)
+            {
+                <option class="alma" value="@culture.Key">@culture.Value</option>
+            }
+        </select>
+        <button class="btn btn-outline-primary selected" @onclick="RequestCultureChange"> @Localizer["Kiválasztás"]</button>
+    </form>
+}
+
+
+@code {
+    private string selectedCulture = System.Threading.Thread.CurrentThread.CurrentCulture.Name;
+    private Dictionary<string, string> cultures;
+
+    protected override void OnInitialized()
+    {
+        cultures = Configuration.GetSection("Cultures")
+        .GetChildren().ToDictionary(x => x.Key, x => x.Value);
+    }
+
+    private void RequestCultureChange()
+    {
+        if (string.IsNullOrWhiteSpace(selectedCulture) || selectedCulture == "Válasszon..." || selectedCulture == "Select...")
+        {
+            return;
+        }
+        
+        var uri = new Uri(NavigationManager.Uri)
+            .GetComponents(UriComponents.PathAndQuery, UriFormat.Unescaped);
+
+        var query = $"?culture={Uri.EscapeDataString(selectedCulture)}&" +
+            $"redirectUri={Uri.EscapeDataString(uri)}";
+
+        NavigationManager.NavigateTo("/Culture/SetCulture" + query, forceLoad: true);
+    }
+}

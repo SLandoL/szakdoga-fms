@@ -1,0 +1,11 @@
+﻿@page
+@model LockoutModel
+@inject IStringLocalizer<App> Localizer
+@{
+    ViewData["Title"] = @Localizer["Ön ki lett zárva"];
+}
+
+<header>
+    <h1 class="text-danger">@ViewData["Title"]</h1>
+    <p class="text-danger">@Localizer["Ez a fiók zárolva van. Kérjük, próbálja újra később."]</p>
+</header>

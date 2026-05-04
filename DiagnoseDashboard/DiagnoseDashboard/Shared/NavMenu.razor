@@ -1,0 +1,92 @@
+﻿@using Data
+
+@inject DiagnoseDashboardService mqttService
+@inject IStringLocalizer<App> Localizer
+
+<div class="top-row pl-4 navbar navbar-dark" id="corner_navbar">
+    <a class="navbar-brand tilte_shadow" href=""><img class="shadow_img mr-1 p-1" width="30" height="30" src="css/Image/cropped-logo_kicsi-2.png" alt="Ipar4 Logo" />@Localizer["Hibamenedzsment"]</a>
+    <button class="navbar-toggler" @onclick="ToggleNavMenu">
+        <span class="navbar-toggler-icon"></span>
+    </button>
+</div>
+
+<div class="@NavMenuCssClass">
+    <ul class="nav flex-column">
+        <li class="nav-item px-3" @onclick="ToggleNavMenu">
+            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
+                <span class="oi oi-home" aria-hidden="true" style="color: #adff2f"></span> @Localizer["Kezdőoldal"]
+            </NavLink>
+        </li>
+        <AuthorizeView>
+            <Authorized>
+                <li class="nav-item px-3" @onclick="ToggleNavMenu">
+                    <NavLink class="nav-link" href="dashboard">
+                        <span class="oi oi-aperture" style="color: #adff2f"></span> @Localizer["Hiba monitorozás"]
+                    </NavLink>
+                </li>
+                <li class="broker nav-item px-3" @onclick="async() => await ReconnectAndSpinner()">
+                    <NavLink class="nav-link" style="cursor: pointer">
+                        <span class="invis_btn d-inline-flex align-items-center">
+                            @if (isLoading)
+                            {
+                                <span class="ml-1 mr-2"><SpinLoader IsLoading="isLoading" Spinner="SpinnerType.Chase" Size="17.6px" Color="#adff2f"></SpinLoader></span>
+                            }
+                            else
+                            {
+                                <span class="oi oi-reload" style="color: #adff2f"></span>
+                            }
+                            @Localizer["Kapcsolodás MQTT-hez"]
+                        </span>
+                    </NavLink>
+                </li>
+            </Authorized>
+        </AuthorizeView>
+    </ul>
+</div>
+
+@if (mqttService.alert == ProfileMessages.MQTTISREACHABLE)
+{
+    <div class="alert alert-success alert-dismissible fade show align-bottom text-center mr-2 ml-2 alert_position" id="alert_size" role="alert">
+        <i class="fa-solid fa-circle-check fa-fade" style="--fa-beat-scale: 1.5;"></i>
+        <div>
+            @Localizer["Elérhető az MQTT Broker!"]
+        </div>
+        <button type="button" class="close" @onclick="DismissAlert" aria-label="close"><span aria-hidden="true">&times;</span></button>
+    </div>
+}
+else if (mqttService.alert == ProfileMessages.MQTTNOTUP)
+{
+    <div class="alert alert-danger alert-dismissible fade show align-bottom text-center mr-2 ml-2 alert_position" id="alert_size" role="alert">
+        <i class="fa-solid fa-circle-xmark fa-fade" style="--fa-beat-scale: 1.5;"></i>
+        <div>
+            @Localizer["Nem érhető el az MQTT Broker!"]
+        </div>
+        <button type="button" class="close" @onclick="DismissAlert" aria-label="close"><span aria-hidden="true">&times;</span></button>
+    </div>
+}
+
+@code {
+    private bool collapseNavMenu = true;
+    private string NavMenuCssClass => collapseNavMenu ? "collapse" : null;
+    public bool isLoading = false;
+
+    private void ToggleNavMenu()
+    {
+        collapseNavMenu = !collapseNavMenu;
+    }
+
+    private void DismissAlert()
+    {
+        mqttService.alert = ProfileMessages.NULL;
+        StateHasChanged();
+    }
+
+    private async Task ReconnectAndSpinner()
+    {
+        isLoading = true;
+        StateHasChanged();
+        await mqttService.ConnectMQTT();
+        isLoading = false;
+        StateHasChanged();
+    }
+    }

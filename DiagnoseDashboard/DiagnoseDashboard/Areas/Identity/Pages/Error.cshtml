@@ -1,0 +1,21 @@
+﻿@page
+@model ErrorModel
+@inject IStringLocalizer<App> Localizer
+@{
+    ViewData["Title"] = @Localizer["Hiba"];
+}
+
+<h1 class="text-danger">@Localizer["Error"].</h1>
+<h2 class="text-danger">@Localizer["Hiba történt a kérése feldolgozása során."]</h2>
+
+@if (Model.ShowRequestId)
+{
+    <p>
+        <strong>@Localizer["Error ID:"]</strong> <code>@Model.RequestId</code>
+    </p>
+}
+
+<h3>@Localizer["Fejlesztési mód"]</h3>
+<p>
+    @Localizer["A"] <strong>@Localizer["Fejlesztői"]</strong> @Localizer["környezetre váltás részletesebb információkat jelenít meg a felmerült hibáról."]
+</p>

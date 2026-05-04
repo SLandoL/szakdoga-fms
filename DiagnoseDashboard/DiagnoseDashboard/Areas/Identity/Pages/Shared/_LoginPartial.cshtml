@@ -1,0 +1,29 @@
+﻿@using Microsoft.AspNetCore.Identity
+@inject SignInManager<IdentityUser> SignInManager
+@inject UserManager<IdentityUser> UserManager
+@inject IStringLocalizer<App> Localizer
+@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
+
+<ul class="navbar-nav">
+
+@if (SignInManager.IsSignedIn(User))
+{
+    <li class="nav-item">
+        <a  class="nav-link text-white" asp-area="Identity" asp-page="/Account/Manage/Index" title="Manage"><i class="fa-solid fa-user" style="color: #adff2f"></i> @User.Identity.Name</a>
+    </li>
+    <li class="nav-item">
+        <form class="form-inline" asp-area="Identity" asp-page="/Account/Logout" asp-route-returnUrl="/" method="post">
+            <button  type="submit" class="nav-link btn btn-link text-white" id="color_white"><i class="fa-solid fa-user-minus" style="color: #adff2f"></i> @Localizer["Kijelentkezés"]</button>
+        </form>
+    </li>
+}
+else
+{
+    <li class="nav-item">
+        <a class="nav-link text-white" asp-area="Identity" asp-page="/Account/Register" id="color_white"><span class="oi oi-person" style="color: #adff2f"></span> @Localizer["Regisztrálás"]</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link text-white" asp-area="Identity" asp-page="/Account/Login" id="color_white"><span class="oi oi-account-login" style="color: #adff2f"></span> @Localizer["Bejelentkezés"]</a>
+    </li>
+}
+</ul>

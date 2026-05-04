@@ -1,0 +1,39 @@
+﻿.selected {
+    color: #adff2f;
+    background-color: transparent;
+    background-image: none;
+    border-color: #adff2f;
+}
+
+    .selected:focus {
+        color: white;
+        background-color: #adff2f !important;
+        border-color: #355E3B !important;
+    }
+
+    .selected:hover {
+        background-color: #adff2f;
+        color: white;
+        border-color: #355E3B;
+    }
+
+    .selected:active {
+        outline: none !important;
+        box-shadow: none !important;
+        border-color: #355E3B !important;
+    }
+
+
+.form-inline:active {
+    outline: none !important;
+    box-shadow: none !important;
+    border-color: #355E3B !important;
+}
+.form-inline:hover {
+    border-color: #355E3B !important;
+}
+
+.green:hover {
+    background-image: none !important;
+    background-color: #adff2f !important;
+}

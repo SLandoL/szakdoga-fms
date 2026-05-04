@@ -1,0 +1,14 @@
+﻿@inject IStringLocalizer<App> Localizer
+
+<AuthorizeView>
+    <Authorized>
+        <a class="nav_text_color" href="Identity/Account/Manage"><i class="fa-solid fa-user" style="color: #adff2f"></i> @context.User.Identity.Name.Substring(0, @context.User.Identity.Name.LastIndexOf("@"))</a>
+        <form method="post" action="Identity/Account/LogOutFromBlazor">
+            <button type="submit" class="nav-link btn btn-link text-white"><i class="fa-solid fa-user-minus" style="color: #adff2f"></i> @Localizer["Kijelentkezés"]</button>
+        </form>
+    </Authorized>
+    <NotAuthorized>
+        <a class="nav_text_color" href="Identity/Account/Register"><i class="fa-solid fa-user-plus" style="color: #adff2f"></i> @Localizer["Regisztrálás"]</a>
+        <a class="nav_text_color" href="Identity/Account/Login"><i class="fa-solid fa-right-to-bracket" style="color: #adff2f"></i> @Localizer["Bejelentkezés"]</a>
+    </NotAuthorized>
+</AuthorizeView>

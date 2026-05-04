@@ -1,0 +1,27 @@
+﻿@page
+@model GenerateRecoveryCodesModel
+@inject IStringLocalizer<App> Localizer
+@{
+    ViewData["Title"] = @Localizer["Kéttényezős hitelesítési (2FA) helyreállítási kódok létrehozása"];
+    ViewData["ActivePage"] = ManageNavPages.TwoFactorAuthentication;
+}
+
+<partial name="_StatusMessage" for="StatusMessage" />
+<h4>@ViewData["Title"]</h4>
+<div class="alert alert-warning" role="alert">
+    <p>
+        <span class="glyphicon glyphicon-warning-sign"></span>
+        <strong>@Localizer["Ezeket a kódokat tegye biztonságos helyre."]</strong>
+    </p>
+    <p>
+        @Localizer["Ha elveszíti eszközét, és nem rendelkezik a helyreállítási kódokkal, akkor elveszíti hozzáférését fiókjához."]
+    </p>
+    <p>
+        @Localizer["Az új helyreállítási kódok generálása nem módosítja a hitelesítő alkalmazásokban használt kulcsokat. Ha módosítani szeretné a hitelesítő alkalmazásban használt kulcsot, alaphelyzetbe kell állítania a hitelesítő kulcsokat."]<a asp-page="./ResetAuthenticator"></a>
+    </p>
+</div>
+<div>
+    <form method="post" class="form-group">
+        <button class="btn btn-danger" type="submit">@Localizer["Helyreállítási kódok generálása"]</button>
+    </form>
+</div>

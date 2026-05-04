@@ -1,0 +1,40 @@
+﻿@page "/"
+@inject IStringLocalizer<App> Localizer
+
+<body class="body">
+    <hr style="color: green; border:10px" />
+    <div class="service">
+        <div class="title">
+            <h2>@Localizer["Fő lehetséges hibaforrások"]</h2>
+        </div>
+
+        <div class="box">
+            <div class="cards">
+                <i class="fas fa-industry"></i>
+                <h5 class="card_tilte text-center">@Localizer["Gyártósor"]</h5>
+                <div class="pra">
+                    <p>@Localizer["Gyártósor text"]</p>
+                    <hr class="design_line" />
+                </div>
+            </div>
+
+            <div class="cards">
+                <i class="fa-solid fa-bolt"></i>
+                <h5 class="card_tilte text-center">@Localizer["Áramellátás"]</h5>
+                <div class="pra">
+                    <p>@Localizer["Áramellátás text"]</p>
+                    <hr class="design_line" />
+                </div>
+            </div>
+
+            <div class="cards">
+                <i class="fa-solid fa-tower-cell"></i>
+                <h5 class="card_tilte text-center">@Localizer["Kommunikáció"]</h5>
+                <div class="pra">
+                    <p>@Localizer["Kommunikáció text"]</p>
+                    <hr class="design_line" />
+                </div>
+            </div>
+        </div>
+    </div>
+</body>

@@ -1,0 +1,25 @@
+﻿@page
+@model Disable2faModel
+@inject IStringLocalizer<App> Localizer
+@{
+    ViewData["Title"] = @Localizer["Kétlépcsős hitelesítés (2FA) letiltásas"];
+    ViewData["ActivePage"] = ManageNavPages.TwoFactorAuthentication;
+}
+
+<partial name="_StatusMessage" for="StatusMessage" />
+<h2>@ViewData["Title"]</h2>
+
+<div class="alert alert-warning" role="alert">
+    <p>
+        <strong>@Localizer["Ez a művelet csak a 2FA-t tiltja le."]</strong>
+    </p>
+    <p>
+        @Localizer["A 2FA letiltása nem módosítja a hitelesítő alkalmazásokban használt kulcsokat. Ha módosítani szeretné a hitelesítő alkalmazásban használt kulcsot, alaphelyzetbe kell állítania a hitelesítő kulcsokat"] <a asp-page="./ResetAuthenticator">.</a>
+    </p>
+</div>
+
+<div>
+    <form method="post" class="form-group">
+        <button class="btn btn-danger" type="submit">@Localizer["A 2FA letiltása"]</button>
+    </form>
+</div>
