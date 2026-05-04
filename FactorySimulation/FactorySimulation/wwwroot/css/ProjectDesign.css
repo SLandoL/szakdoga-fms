@@ -1,0 +1,58 @@
+﻿.text_color {
+    color: black;
+}
+
+.item_color {
+    color: snow;
+}
+
+.home_title {
+    margin-top: 70px;
+    margin-bottom: 60px;
+}
+
+.home_h1 {
+    font-size: 50px;
+    font-weight: 900;
+    margin-bottom: 50px;
+}
+
+.home_h2 {
+    font-size: 30px;
+    font-weight: 600;
+    margin-bottom: 120px;
+}
+
+.home_h3 {
+    font-size: 40px;
+    font-weight: 700;
+    margin-bottom: 40px;
+}
+
+.home_h4 {
+    font-size: 30px;
+    font-weight: 500;
+}
+
+.item_logo {
+    font-size: 60px;
+    margin-bottom: 40px;
+}
+
+.item_card {
+    padding-top: 50px;
+    padding-bottom: 50px;
+    margin-left: 20px;
+    margin-right: 20px;
+    margin-bottom: 20px;
+    background-image: linear-gradient(to bottom, #787878 20%, #2a2a2a 60%);
+    border-radius: 30px 30px 30px 30px;
+}
+
+@media screen and (max-width: 990px) {
+    .box {
+        width:100%;
+        display:block;
+        margin-bottom:20px;
+    }
+}

@@ -1,0 +1,530 @@
+﻿@page "/ControlPanel"
+
+@using ViewModels
+@using Data
+
+
+@inject ControlPanelViewModel ControlPanelVM
+
+<body style="background-color:transparent;">
+    <div class="help_div text-center align-items-center p-2">
+        <div class="d-inline-flex align-items-center">
+            <div class="help_color_green"></div>
+            <div class="text-white ">Activated</div>
+        </div>
+        <div class="d-inline-flex align-items-center">
+            <div class="help_color_red"></div>
+            <div class="text-white">Deactivated</div>
+        </div>
+    </div>
+    <div class=" mx-3 px-2 justify-content-center">
+        <!--1.sor-->
+        <div class="row justify-content-center">
+            <div class="col text-center">
+                @if (ControlPanelViewModel.Ready && !ControlPanelViewModel.PauseButton)
+                {
+                    @if (!ControlPanelViewModel.RendszerButton)
+                    {
+                        <button class="button_panel" @onclick="() => ControlPanelVM.PostSystem()">Rendszer</button>
+                    }
+                    else
+                    {
+                        <button class="button_panel_error" @onclick="() => ControlPanelVM.PostSystem()">Rendszer</button>
+                    }
+                }
+                else
+                {
+                    if (!ControlPanelViewModel.RendszerButton)
+                    {
+                        <button class="btn button_panel" disabled>Rendszer</button>
+                    }
+                    else
+                    {
+                        <button class="btn button_panel_error" disabled>Rendszer</button>
+                    }
+
+                }
+
+            </div>
+            <div class="col text-center">
+                @if (!ControlPanelViewModel.RendszerButton && ControlPanelViewModel.Ready)
+                {
+                    @if (ControlPanelViewModel.PauseButton)
+                    {
+                        <button class="btn button_panel_error" @onclick="() => ControlPanelVM.PostPause()">Pause</button>
+                    }
+                    else
+                    {
+                        <button class="btn button_panel" @onclick="() => ControlPanelVM.PostPause()">Pause</button>
+                    }
+                }
+                else
+                {
+                    @if (ControlPanelViewModel.PauseButton)
+                    {
+                        <button class="btn button_panel_error" disabled>Pause</button>
+                    }
+                    else
+                    {
+                        <button class="btn button_panel" disabled>Pause</button>
+                    }
+                }
+
+            </div>
+            <div class="col text-center">
+                @if (!ControlPanelViewModel.RendszerButton && !ControlPanelViewModel.PauseButton && ControlPanelViewModel.Ready)
+                {
+                    @if (ControlPanelViewModel.WakeUpButton)
+                    {
+                        <button class="btn button_panel_error" @onclick="() => WakeUpOnClick()">Wake Up</button>
+                    }
+                    else
+                    {
+                        <button class="btn button_panel" @onclick="() => WakeUpOnClick()">Wake Up</button>
+
+                    }
+                }
+                else
+                {
+                    @if (ControlPanelViewModel.WakeUpButton)
+                    {
+                        <button class="btn button_panel_error" disabled>Wake Up</button>
+                    }
+                    else
+                    {
+                        <button class="btn button_panel" disabled>Wake Up</button>
+
+                    }
+                }
+            </div>
+            <div class="col text-center">
+                <div class="dropdown">
+                    @if (!ControlPanelViewModel.RendszerButton && ControlPanelViewModel.Ready)
+                    {
+                        @if (ControlPanelViewModel.LEDColor == LEDColor.RED)
+                        {
+                            <button class="btn button_led button_led_red dropdown-toggle" type="button" id="LEDColors" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                LED színbeállítás
+                            </button>
+                        }
+                        else if (ControlPanelViewModel.LEDColor == LEDColor.GREEN)
+                        {
+                            <button class="btn button_led button_led_green dropdown-toggle" type="button" id="LEDColors" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                LED színbeállítás
+                            </button>
+                        }
+                        else if (ControlPanelViewModel.LEDColor == LEDColor.BLUE)
+                        {
+                            <button class="btn button_led button_led_blue dropdown-toggle" type="button" id="LEDColors" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                LED színbeállítás
+                            </button>
+                        }
+                        else if (ControlPanelViewModel.LEDColor == LEDColor.BEER)
+                        {
+                            <button class="btn button_led button_led_beer dropdown-toggle" type="button" id="LEDColors" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                LED színbeállítás
+                            </button>
+                        }
+                        <div class="dropdown-menu dropdown_led" aria-labelledby="LEDColors">
+                            @if (ControlPanelViewModel.LEDColor == LEDColor.RED)
+                            {
+                                <button class="dropdown-item active item_red" type="button">Red</button>
+                            }
+                            else
+                            {
+                                <button class="dropdown-item item_red" @onclick="()=> ControlPanelVM.PostLED(LEDColor.RED)" type="button">Red</button>
+                            }
+                            @if (ControlPanelViewModel.LEDColor == LEDColor.GREEN)
+                            {
+                                <button class="dropdown-item active item_green" type="button">Green</button>
+                            }
+                            else
+                            {
+                                <button class="dropdown-item item_green" @onclick="()=> ControlPanelVM.PostLED(LEDColor.GREEN)" type="button">Green</button>
+                            }
+                            @if (ControlPanelViewModel.LEDColor == LEDColor.BLUE)
+                            {
+                                <button class="dropdown-item active item_blue" type="button">Blue</button>
+                            }
+                            else
+                            {
+                                <button class="dropdown-item item_blue" @onclick="()=> ControlPanelVM.PostLED(LEDColor.BLUE)" type="button">Blue</button>
+                            }
+                            @if (ControlPanelViewModel.LEDColor == LEDColor.BEER)
+                            {
+                                <button class="dropdown-item active item_beer" type="button">Beer</button>
+                            }
+                            else
+                            {
+                                <button class="dropdown-item item_beer" @onclick="()=> ControlPanelVM.PostLED(LEDColor.BEER)" type="button">Beer</button>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        @if (ControlPanelViewModel.LEDColor == LEDColor.RED)
+                        {
+                            <button class="btn button_led button_led_red dropdown-toggle" type="button" id="LEDColors" disabled>
+                                LED színbeállítás
+                            </button>
+                        }
+                        else if (ControlPanelViewModel.LEDColor == LEDColor.GREEN)
+                        {
+                            <button class="btn button_led button_led_green dropdown-toggle" type="button" id="LEDColors" disabled>
+                                LED színbeállítás
+                            </button>
+                        }
+                        else if (ControlPanelViewModel.LEDColor == LEDColor.BLUE)
+                        {
+                            <button class="btn button_led button_led_blue dropdown-toggle" type="button" id="LEDColors" disabled>
+                                LED színbeállítás
+                            </button>
+                        }
+                    }
+                </div>
+            </div>
+        </div>
+        <!--2.sor-->
+        <div class="row justify-content-center my-2" style="border-bottom:3px dotted">
+                <div class="" style="font-size:30px;">
+                    <label class="pb-3 mr-3 text_color" style="font-size:30px; font-weight:700">Kocsi sebessége:</label>
+                    @if (!ControlPanelViewModel.RendszerButton && !ControlPanelViewModel.PauseButton && ControlPanelViewModel.Ready)
+                    {
+                        <input class="speed_slider" type="range" name="Speed" @bind="ControlPanelViewModel.CarSpeed" @bind:event="oninput" @onchange="()=> ControlPanelVM.PostCarSpeed(0)" min="0" max="100" step="1" />
+
+                    }
+                    else
+                    {
+                        <input class="speed_slider" type="range" name="Speed" @bind="ControlPanelViewModel.CarSpeed" @bind:event="oninput" disabled />
+
+                    }
+                    <label class="mx-3 text_color" style="font-size:30px; font-weight:700">@ControlPanelViewModel.CarSpeed %</label>
+                </div>
+                <div class="ml-2">
+                    @if (!ControlPanelViewModel.RendszerButton && !ControlPanelViewModel.PauseButton && ControlPanelViewModel.Ready)
+                    {
+                        <button class="btn btn-secondary button_speed justify-content-center" @onclick="()=> ControlPanelVM.PostCarSpeed(-1)"><span class="oi oi-caret-left"></span></button>
+                        <button class="btn btn-secondary button_speed justify-content-center" @onclick="()=> ControlPanelVM.PostCarSpeed(1)"><span class="oi oi-caret-right"></span></button>
+                    }
+                    else
+                    {
+                        <button class="btn btn-secondary button_speed justify-content-center" disabled><span class="oi oi-caret-left"></span></button>
+                        <button class="btn btn-secondary button_speed justify-content-center" disabled><span class="oi oi-caret-right"></span></button>
+                    }
+                </div>
+        </div>
+        <!--3.sor-->
+        <div class="row justify-content-center">
+            <div class="col text-center">
+                @if (!ControlPanelViewModel.RendszerButton && !ControlPanelViewModel.PauseButton && ControlPanelViewModel.Ready)
+                {
+                    @if (ControlPanelViewModel.SzalagPLCButton)
+                    {
+                        <button class="btn button_panel_error" @onclick="() => ControlPanelVM.PostPLCFailure()">Szalag szenzor meghibásodása</button>
+                    }
+                    else
+                    {
+                        <button class="btn button_panel" @onclick="() => ControlPanelVM.PostPLCFailure()">Szalag szenzor meghibásodása</button>
+                    }
+                }
+                else
+                {
+                    @if (ControlPanelViewModel.SzalagPLCButton)
+                    {
+                        <button class="btn button_panel_error" disabled>Szalag szenzor meghibásodása</button>
+                    }
+                    else
+                    {
+                        <button class="btn button_panel" disabled>Szalag szenzor meghibásodása</button>
+                    }
+                }
+            </div>
+            <div class="col text-center">
+                @if (!ControlPanelViewModel.RendszerButton && !ControlPanelViewModel.PauseButton && ControlPanelViewModel.Ready)
+                {
+                    @if (ControlPanelViewModel.KocsiSzenzorButton)
+                    {
+                        <button class="btn button_panel_error" @onclick="() => ControlPanelVM.PostCarError()">Kocsi szenzorok meghibásodása</button>
+                    }
+                    else
+                    {
+                        <button class="btn button_panel" @onclick="() => ControlPanelVM.PostCarError()">Kocsi szenzorok meghibásodása</button>
+                    }
+                }
+                else
+                {
+                    @if (ControlPanelViewModel.KocsiSzenzorButton)
+                    {
+                        <button class="btn button_panel_error" disabled>Kocsi szenzorok meghibásodása</button>
+                    }
+                    else
+                    {
+                        <button class="btn button_panel" disabled>Kocsi szenzorok meghibásodása</button>
+                    }
+                }
+            </div>
+            <div class="col text-center">
+                @if (!ControlPanelViewModel.RendszerButton && !ControlPanelViewModel.PauseButton && ControlPanelViewModel.Ready)
+                {
+                    @if (ControlPanelViewModel.TartalyButton)
+                    {
+                        <button class="btn button_panel_error" @onclick="() => ControlPanelVM.PostContainerEmpty()">Tartály szenzorok meghibásodása</button>
+                    }
+                    else
+                    {
+                        <button class="btn button_panel" @onclick="() => ControlPanelVM.PostContainerEmpty()">Tartály szenzorok meghibásodása</button>
+                    }
+                }
+                else
+                {
+                    @if (ControlPanelViewModel.TartalyButton)
+                    {
+                        <button class="btn button_panel_error" disabled>Tartály szenzorok meghibásodása</button>
+                    }
+                    else
+                    {
+                        <button class="btn button_panel" disabled>Tartály szenzorok meghibásodása</button>
+                    }
+                }
+            </div>
+            <div class="col text-center">
+                @if (!ControlPanelViewModel.RendszerButton && !ControlPanelViewModel.PauseButton && ControlPanelViewModel.Ready)
+                {
+                    @if (ControlPanelViewModel.RFIDButton)
+                    {
+                        <button class="btn button_panel_error" @onclick="() => ControlPanelVM.PostRFIDError()">RFID olvasó meghibásodása</button>
+                    }
+                    else
+                    {
+                        <button class="btn button_panel" @onclick="() => ControlPanelVM.PostRFIDError()">RFID olvasó meghibásodása</button>
+                    }
+                }
+                else
+                {
+                    @if (ControlPanelViewModel.RFIDButton)
+                    {
+                        <button class="btn button_panel_error" disabled>RFID olvasó meghibásodása</button>
+                    }
+                    else
+                    {
+                        <button class="btn button_panel" disabled>RFID olvasó meghibásodása</button>
+                    }
+                }
+            </div>
+        </div>
+        <!--4.sor-->
+        <div class="row justify-content-center">
+            <div class="col text-center">
+                @if (!ControlPanelViewModel.RendszerButton && !ControlPanelViewModel.PauseButton && ControlPanelViewModel.Ready)
+                {
+                    @if (ControlPanelViewModel.KKElectroHibaButton)
+                    {
+                        <button class="btn button_panel_error" @onclick="() => ControlPanelVM.PostCommunicationPowerError()">Kommunikációs kozpont áramellátásának meghibásodása</button>
+                    }
+                    else
+                    {
+                        <button class="btn button_panel" @onclick="() => ControlPanelVM.PostCommunicationPowerError()">Kommunikációs kozpont áramellátásának meghibásodása</button>
+
+                    }
+                }
+                else
+                {
+                    @if (ControlPanelViewModel.KKElectroHibaButton)
+                    {
+                        <button class="btn button_panel_error" disabled>Kommunikációs kozpont áramellátásának meghibásodása</button>
+                    }
+                    else
+                    {
+                        <button class="btn button_panel" disabled>Kommunikációs kozpont áramellátásának meghibásodása</button>
+
+                    }
+                }
+            </div>
+            <div class="col text-center">
+                @if (!ControlPanelViewModel.RendszerButton && !ControlPanelViewModel.PauseButton && ControlPanelViewModel.Ready)
+                {
+                    @if (ControlPanelViewModel.TartalyElectroButton)
+                    {
+                        <button class="btn button_panel_error" @onclick="() => ControlPanelVM.PostTartalyElectroError()">Tartály áramellátásának meghibásodása</button>
+                    }
+                    else
+                    {
+                        <button class="btn button_panel" @onclick="() => ControlPanelVM.PostTartalyElectroError()">Tartály áramellátásának meghibásodása</button>
+
+                    }
+                }
+                else
+                {
+                    @if (ControlPanelViewModel.TartalyElectroButton)
+                    {
+                        <button class="btn button_panel_error" disabled>Tartály áramellátásának meghibásodása</button>
+                    }
+                    else
+                    {
+                        <button class="btn button_panel" disabled>Tartály áramellátásának meghibásodása</button>
+
+                    }
+                }
+            </div>
+            <div class="col text-center">
+                @if (!ControlPanelViewModel.RendszerButton && !ControlPanelViewModel.PauseButton && ControlPanelViewModel.Ready)
+                {
+                    @if (ControlPanelViewModel.KocsiElectroButton)
+                    {
+                        <button class="btn button_panel_error" @onclick="() => ControlPanelVM.PostKocsiElectroError()">Kocsi áramellátásának meghibásodása</button>
+                    }
+                    else
+                    {
+                        <button class="btn button_panel" @onclick="() => ControlPanelVM.PostKocsiElectroError()">Kocsi áramellátásának meghibásodása</button>
+
+                    }
+                }
+                else
+                {
+                    @if (ControlPanelViewModel.KocsiElectroButton)
+                    {
+                        <button class="btn button_panel_error" disabled>Kocsi áramellátásának meghibásodása</button>
+                    }
+                    else
+                    {
+                        <button class="btn button_panel" disabled>Kocsi áramellátásának meghibásodása</button>
+
+                    }
+                }
+            </div>
+            <div class="col text-center">
+                @if (!ControlPanelViewModel.RendszerButton && !ControlPanelViewModel.PauseButton && ControlPanelViewModel.Ready)
+                {
+                    @if (ControlPanelViewModel.RendszerElectroButton)
+                    {
+                        <button class="btn button_panel_error" @onclick="() => ControlPanelVM.PostRendszerElectroError()">Rendszer áramellátásának meghibásodása</button>
+                    }
+                    else
+                    {
+                        <button class="btn button_panel" @onclick="() => ControlPanelVM.PostRendszerElectroError()">Rendszer áramellátásának meghibásodása</button>
+
+                    }
+                }
+                else
+                {
+                    @if (ControlPanelViewModel.RendszerElectroButton)
+                    {
+                        <button class="btn button_panel_error" disabled>Rendszer áramellátásának meghibásodása</button>
+                    }
+                    else
+                    {
+                        <button class="btn button_panel" disabled>Rendszer áramellátásának meghibásodása</button>
+
+                    }
+                }
+            </div>
+        </div>
+        <!--5.sor-->
+        <div class="row justify-content-center">
+            <div class="col text-center">
+                @if (!ControlPanelViewModel.RendszerButton && !ControlPanelViewModel.PauseButton && ControlPanelViewModel.Ready)
+                {
+                    @if (ControlPanelViewModel.KommKozElectroKommButton)
+                    {
+                        <button class="btn button_panel_error" @onclick="() => ControlPanelVM.PostKommKozElectroKommError()">Komm. központ árammérő meghibásodása</button>
+                    }
+                    else
+                    {
+                        <button class="btn button_panel" @onclick="() => ControlPanelVM.PostKommKozElectroKommError()">Komm. központ árammérő meghibásodása</button>
+
+                    }
+                }
+                else
+                {
+                    @if (ControlPanelViewModel.KommKozElectroKommButton)
+                    {
+                        <button class="btn button_panel_error" disabled>Komm. központ árammérő meghibásodása</button>
+                    }
+                    else
+                    {
+                        <button class="btn button_panel" disabled>Komm. központ árammérő meghibásodása</button>
+
+                    }
+                }
+            </div>
+            <div class="col text-center">
+                @if (!ControlPanelViewModel.RendszerButton && !ControlPanelViewModel.PauseButton && ControlPanelViewModel.Ready)
+                {
+                    @if (ControlPanelViewModel.TartalyElectroKommButton)
+                    {
+                        <button class="btn button_panel_error" @onclick="() => ControlPanelVM.PostTartalyElectroKommError()">Tartály árammérő meghibásodása</button>
+                    }
+                    else
+                    {
+                        <button class="btn button_panel" @onclick="() => ControlPanelVM.PostTartalyElectroKommError()">Tartály árammérő meghibásodása</button>
+
+                    }
+                }
+                else
+                {
+                    @if (ControlPanelViewModel.TartalyElectroKommButton)
+                    {
+                        <button class="btn button_panel_error" disabled>Tartály árammérő meghibásodása</button>
+                    }
+                    else
+                    {
+                        <button class="btn button_panel" disabled>Tartály árammérő meghibásodása</button>
+
+                    }
+                }
+            </div>
+            <div class="col text-center">
+                @if (!ControlPanelViewModel.RendszerButton && !ControlPanelViewModel.PauseButton && ControlPanelViewModel.Ready)
+                {
+                    @if (ControlPanelViewModel.KocsiElectroKommButton)
+                    {
+                        <button class="btn button_panel_error" @onclick="() => ControlPanelVM.PostKocsiElectroKommError()">Kocsi árammérő meghibásodása</button>
+                    }
+                    else
+                    {
+                        <button class="btn button_panel" @onclick="() => ControlPanelVM.PostKocsiElectroKommError()">Kocsi árammérő meghibásodása</button>
+
+                    }
+                }
+                else
+                {
+                    @if (ControlPanelViewModel.KocsiElectroKommButton)
+                    {
+                        <button class="btn button_panel_error" disabled>Kocsi árammérő meghibásodása</button>
+                    }
+                    else
+                    {
+                        <button class="btn button_panel" disabled>Kocsi árammérő meghibásodása</button>
+
+                    }
+                }
+            </div>
+        </div>
+    </div>
+</body>
+
+@code {
+    private async void WakeUpOnClick()
+    {
+        await ControlPanelVM.PostWakeUp();
+        StateHasChanged();
+    }
+
+    protected async override Task OnInitializedAsync()
+    {
+        try
+        {
+            await ControlPanelVM.GetDiagnoses();
+            StateHasChanged();
+        }
+        catch (Exception)
+        {
+            Console.WriteLine("Nem sikerült lekérni az adatokat");
+        }
+        await ControlPanelVM.PostLED(ControlPanelViewModel.LEDColor);
+        if (ControlPanelVM.CarCanGo())
+        {
+            await ControlPanelVM.PostCarSpeed(ControlPanelViewModel.CarSpeed);
+        }
+    }
+}

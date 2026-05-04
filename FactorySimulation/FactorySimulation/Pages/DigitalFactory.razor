@@ -1,0 +1,58 @@
+﻿@page "/DigitalFactory"
+
+@using ViewModels
+
+@inject NavigationManager uriHelper
+
+
+@inject DigitalFactoryViewModel digitalFactoryVM
+
+<body style="background-color:transparent">
+    <div class="container container_background">
+        <div class="row justify-content-md-center">
+            <div class="col col_max_content">
+                <img class="roadLeft" src="../Images/Road.png" alt="Road" />
+                @if (digitalFactoryVM.CarLocation == "onTheWayToFactory")
+                {
+                    <img class="truckRoadLeft" src="/Images/Truck.png" alt="Truck" />
+                }
+            </div>
+            <div class="col col_max_content">
+                <div class="row row_Building">
+                    <img class="building mb-5 mt-3" src="../Images/Factory.png" alt="Factory" />
+                    @if (digitalFactoryVM.CarLocation == "container")
+                    {
+                        <img class="truckFactory" src="/Images/Truck.png" alt="Truck" />
+                    }
+                </div>
+                <div class="row row_Building">
+                    <img class="building mt-5" src="../Images/Container.png" alt="Container" />
+                    @if (digitalFactoryVM.CarLocation == "factory")
+                    {
+                        <img class="truckContainer" src="/Images/Truck.png" alt="Truck" />
+                    }
+                </div>
+            </div>
+            <div class="col col_max_content">
+                <img class="roadRight" src="../Images/Road.png" alt="Road" />
+                @if (digitalFactoryVM.CarLocation == "onTheWayToContainer")
+                {
+                    <img class="truckRoadRight" src="/Images/Truck.png" alt="Truck" />
+                }
+            </div>
+        </div>
+    </div>
+</body>
+
+
+@code {      
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        await Task.Run(async () =>
+        {
+            await Task.Delay(1000);
+            await digitalFactoryVM.GetCarLocation();
+            await InvokeAsync(StateHasChanged);
+        });
+    }
+}

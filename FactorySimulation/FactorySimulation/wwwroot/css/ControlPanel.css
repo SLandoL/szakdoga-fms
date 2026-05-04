@@ -1,0 +1,289 @@
+﻿.help_div {
+    background-image: linear-gradient(135deg, #2a2a2a 20%, #696969, #787878);
+    width:auto;
+    height: 60px;
+}
+
+.help_color_green {
+    margin-right: 30px;
+    width: 40px;
+    height: 40px;
+    background-color: limegreen;
+    border-radius: 20px 20px 20px 20px;
+}
+
+.help_color_red {
+    width: 40px;
+    height: 40px;
+    margin-right: 30px;
+    margin-left: 70px;
+    background-color: red;
+    border-radius: 20px 20px 20px 20px;
+    border-color: snow;
+}
+
+.button_panel {
+    margin: 15px;
+    height: 150px;
+    width: 300px;
+    background-color: limegreen;
+    color: black;
+    font-weight: 900;
+    font-size: 20px;
+    border-radius: 80px 80px 80px 80px;
+    border-color: lightgrey;
+    border-style: ridge;
+    border-width: 10px;
+    outline-style: ridge;
+    outline-color: #2a2a2a;
+    outline-width: 2px;
+}
+
+    .button_panel:hover {
+        box-shadow: rgb(48 48 48) 13px 13px 13px 13px;
+        color: snow;
+    }
+
+    .button_panel:focus {
+        outline-style: ridge;
+        outline-color: #2a2a2a;
+        outline-width: 2px;
+        box-shadow: rgb(48 48 48) 13px 13px 13px 13px;
+        color: snow;
+    }
+
+.button_panel_error {
+    margin: 15px;
+    height: 150px;
+    width: 300px;
+    background-color: red;
+    color: snow;
+    font-weight: 900;
+    font-size: 20px;
+    border-radius: 80px 80px 80px 80px;
+    border-color: lightgrey;
+    border-style: ridge;
+    border-width: 10px;
+    outline-style: ridge;
+    outline-color: #2a2a2a;
+    outline-width: 2px;
+    color: snow;
+}
+
+    .button_panel_error:hover {
+        box-shadow: rgb(48 48 48) 13px 13px 13px 13px;
+        color: snow;
+    }
+
+    .button_panel_error:focus {
+        outline-style: ridge;
+        outline-color: #2a2a2a;
+        outline-width: 2px;
+        box-shadow: rgb(48 48 48) 13px 13px 13px 13px;
+        color: snow;
+    }
+
+.button_led {
+    margin: 15px;
+    height: 150px;
+    width: 300px;
+    font-weight: 900;
+    font-size: 20px;
+    border-radius: 80px 80px 80px 80px;
+    border-color: lightgrey;
+    border-style: ridge;
+    border-width: 10px;
+    outline-style: ridge;
+    outline-color: #2a2a2a;
+    outline-width: 2px;
+}
+
+    .button_led:hover {
+        color: snow;
+        box-shadow: rgb(48 48 48) 13px 13px 13px 13px;
+    }
+
+    .button_led:active {
+        color: snow;
+        box-shadow: rgb(48 48 48) 13px 13px 13px 13px;
+        outline-style: ridge;
+        outline-color: #2a2a2a;
+        outline-width: 2px;
+    }
+
+    .button_led:visited {
+        color: snow;
+        outline-style: ridge;
+        outline-color: #2a2a2a;
+        outline-width: 2px;
+    }
+
+    .button_led:focus {
+        color: snow;
+        outline-style: ridge;
+        outline-color: #2a2a2a;
+        outline-width: 2px;
+        box-shadow: rgb(48 48 48) 13px 13px 13px 13px;
+    }
+
+
+    .button_led_red {
+        background-color: red;
+        color: snow;
+    }
+
+    .button_led_green {
+        color: black;
+        background-color: limegreen;
+    }
+
+    .button_led_blue {
+        background-color: darkblue;
+        color: snow;
+    }
+
+.button_led_beer {
+    background-image: linear-gradient(180deg, snow, snow 20%, yellow 20%, yellow 100%);
+    color: black;
+}
+
+.dropdown_led {
+    margin-left: 25px;
+    width: 250px;
+    border-radius: 20px 20px 20px 20px;
+}
+
+    .dropdown_led button {
+        border-radius: 12px 12px 12px 12px;
+    }
+
+    .dropdown_led .item_red:hover {
+        background-color: red;
+        color: snow;
+    }
+
+    .dropdown_led .item_red.active {
+        background-color: red;
+        color: snow;
+    }
+
+    .dropdown_led .item_green:hover {
+        background-color: limegreen;
+        color: snow;
+    }
+
+    .dropdown_led .item_green.active {
+        background-color: limegreen;
+        color: snow;
+    }
+
+    .dropdown_led .item_blue:hover {
+        background-color: darkblue;
+        color: snow;
+    }
+
+    .dropdown_led .item_blue.active {
+        background-color: darkblue;
+        color: snow;
+    }
+
+    .dropdown_led .item_beer:hover {
+        background-color: yellow;
+        color: black;
+    }
+
+    .dropdown_led .item_beer.active {
+        background-color: yellow;
+        color: black;
+    }
+
+
+.speed_slider {
+    width:400px;
+}
+
+.button_speed {
+    margin-left: 35px;
+    margin-right: 35px;
+    height: 45px;
+    width: 45px;
+    color: snow;
+    background-color: #2a2a2a;
+    outline-style: ridge;
+    outline-color: #2a2a2a;
+    outline-width: 2px;
+    border-radius: 18px 18px 18px 18px;
+    border-color: lightgrey;
+    border-style: ridge;
+    border-width: thick;
+}
+
+    .button_speed:hover {
+        background-color: #2a2a2a;
+        outline-style: ridge;
+        outline-color: #2a2a2a;
+        outline-width: 2px;
+        border-radius: 18px 18px 18px 18px;
+        border-color: lightgrey;
+        border-style: ridge;
+        border-width: thick;
+        box-shadow: rgb(48 48 48) 7px 7px 7px 7px;
+    }
+
+    .button_speed:active {
+        background-color: #2a2a2a;
+        outline-style: ridge;
+        outline-color: #2a2a2a;
+        outline-width: 2px;
+        border-radius: 18px 18px 18px 18px;
+        border-color: lightgrey;
+        border-style: ridge;
+        border-width: thick;
+    }
+
+    .button_speed:visited {
+        background-color: #2a2a2a;
+        outline-style: ridge;
+        outline-color: #2a2a2a;
+        outline-width: 2px;
+        border-radius: 18px 18px 18px 18px;
+        border-color: lightgrey;
+        border-style: ridge;
+        border-width: thick;
+    }
+
+    .button_speed:focus {
+        background-color: #2a2a2a;
+        outline-style: ridge;
+        outline-color: #2a2a2a;
+        outline-width: 2px;
+        border-radius: 18px 18px 18px 18px;
+        border-color: lightgrey;
+        border-style: ridge;
+        border-width: thick;
+    }
+
+@media only screen and (max-width : 765px) {
+    .button_panel {
+        height: 100px;
+        width: 250px;
+        font-size: 20px;
+    }
+
+    .button_panel_error {
+        height: 100px;
+        width: 250px;
+        font-size: 20px;
+    }
+
+    .button_led {
+        height: 100px;
+        width: 250px;
+        font-size: 20px;
+    }
+
+    .speed_slider {
+        height: 80px;
+        width: 300px;
+    }
+}

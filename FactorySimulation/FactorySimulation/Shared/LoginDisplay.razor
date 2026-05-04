@@ -1,0 +1,12 @@
+﻿<AuthorizeView>
+    <Authorized>
+        <a class="nav_text_color" href="Identity/Account/Manage">@context.User.Identity.Name.Substring(0, @context.User.Identity.Name.LastIndexOf("@"))</a>
+        <form method="post" action="Identity/Account/LogOutFromBlazor">
+            <button type="submit" class="nav-link btn btn-link text-white">Log out</button>
+        </form>
+    </Authorized>
+    <NotAuthorized>
+        <a class="nav_text_color" href="Identity/Account/Register">Register</a>
+        <a class="nav_text_color" href="Identity/Account/Login">Log in</a>
+    </NotAuthorized>
+</AuthorizeView>

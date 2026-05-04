@@ -1,0 +1,51 @@
+﻿#sidebar_color {
+    background-image: linear-gradient(to right,#2a2a2a 20%, #696969, #787878);
+    border: 0px;
+}
+
+#corner_navbar {
+    background-color: #2a2a2a;
+}
+
+.main_background {
+    background-image: url(../Images/1347641.jpg);
+    background-size: cover;
+    min-height: 100vh;
+    max-height: max-content;
+}
+
+/*Navbar gombok szín*/
+.nav_text_color {
+    color: snow;
+}
+
+    .nav_text_color:hover {
+        color: snow;
+        text-decoration: underline, solid;
+        text-decoration-color: snow;
+    }
+
+.nav_text_color_dark {
+    color: black;
+}
+
+.nav_text_color_dark:hover {
+    color: black;
+    text-decoration: underline;
+    text-decoration-color: black;
+}
+
+/*Login oldalak css*/
+#color_white {
+    text-decoration-color: #ffffff;
+    color: white;
+}
+
+.shadow_img {
+    box-shadow: -4px -4px 2px #ccc;
+    -moz-box-shadow: -4px -4px 2px #ccc;
+    -webkit-box-shadow: -4px -4px 2px #ccc;
+    background-color: white;
+    border-radius: 5px;
+    border: 1px;
+}

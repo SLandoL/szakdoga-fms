@@ -1,0 +1,90 @@
+﻿.container_background {
+    background-color: rgb(0, 255, 33,  0.2  0);
+    border-radius: 450px 450px 450px 450px;
+}
+
+.row_Building {
+    position: relative;
+    top: 0;
+    left: 0;
+}
+
+.col_max_content {
+    max-width: max-content;
+}
+
+.building {
+    width: 100%;
+    height: auto;
+    max-width: 400px;
+    position: relative;
+    top: 0;
+    left: 0;
+}
+
+.roadLeft {
+    width: 100%;
+    height: auto;
+    margin-top: 150px;
+    position: relative;
+    top: 0;
+    left: 0;
+}
+
+.roadRight {
+    width: 100%;
+    height: auto;
+    margin-top: 150px;
+    transform: scaleX(-1);
+    position: relative;
+    top: 0;
+    left: 0;
+}
+
+.truckFactory {
+    width: 80%;
+    height: auto;
+    max-width: 200px;
+    transform: scaleX(-1);
+    position: absolute;
+    top: 60%;
+    left: 20%;
+}
+
+.truckContainer {
+    width: 80%;
+    height: auto;
+    max-width: 200px;
+    position: absolute;
+    top: 60%;
+    left: 25%;
+}
+
+.truckRoadLeft {
+    width: 80%;
+    height: auto;
+    max-width: 200px;
+    position: absolute;
+    top: 35%;
+    left: 3%;
+}
+
+.truckRoadRight {
+    width: 80%;
+    height: auto;
+    max-width: 200px;
+    transform: scaleX(-1);
+    position: absolute;
+    top: 35%;
+    left: 24%;
+}
+
+@media only screen and (max-width: 1250px) {
+    .roadLeft {
+        margin-top: 100px;
+    }
+
+    .roadRight {
+        margin-top: 100px;
+    }
+}
