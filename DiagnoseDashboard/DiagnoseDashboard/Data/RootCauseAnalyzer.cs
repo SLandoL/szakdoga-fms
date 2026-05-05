@@ -4,7 +4,7 @@ using System.Linq;
 namespace DiagnoseDashboard.Data
 {
     /// <summary>
-    /// Performs root cause analysis on the in-memory FaultData list.
+    /// Performs root cause analysis and consequence propagation on the in-memory FaultData list.
     ///
     /// The hierarchy is intentionally kept as an explicit code-level map in this development
     /// step. This avoids a database migration while still making the cause-effect relations
@@ -63,15 +63,22 @@ namespace DiagnoseDashboard.Data
 
         public void PropagateFaults(List<FaultData> faults)
         {
-            // In the first RCA refactor this method deliberately does not change FaultStatus.
-            // The project currently has only WORKING, FAULT and ROOTFAULT states. If propagated
-            // consequences were also written as FAULT, the dashboard could no longer distinguish
-            // real measured faults from inferred consequence faults.
-            //
-            // The explicit hierarchy is therefore used only by DetectRootCauses() to suppress
-            // lower-level active faults when an active ancestor is already present. A later UI or
-            // data-model refactor can add a separate CONSEQUENCE/DERIVED state if consequence
-            // visualisation is needed.
+            if (faults == null)
+            {
+                return;
+            }
+
+            Dictionary<string, FaultData> lookup = BuildLookup(faults);
+            List<FaultData> measuredFaults = lookup.Values
+                .Where(IsMeasuredFault)
+                .OrderByDescending(f => f.Priority)
+                .ThenBy(f => f.Name)
+                .ToList();
+
+            foreach (FaultData measuredFault in measuredFaults)
+            {
+                MarkConsequences(measuredFault.Name, lookup, new HashSet<string>());
+            }
         }
 
         public List<FaultData> DetectRootCauses(List<FaultData> faults)
@@ -83,8 +90,8 @@ namespace DiagnoseDashboard.Data
 
             Dictionary<string, FaultData> lookup = BuildLookup(faults);
             List<FaultData> rootCauses = faults
-                .Where(IsActiveFault)
-                .Where(fault => !HasActiveAncestor(fault, lookup))
+                .Where(IsMeasuredFault)
+                .Where(fault => !HasMeasuredAncestor(fault, lookup))
                 .OrderByDescending(fault => fault.Priority)
                 .ThenBy(fault => fault.Name)
                 .ToList();
@@ -105,12 +112,47 @@ namespace DiagnoseDashboard.Data
                 .ToDictionary(g => g.Key, g => g.First());
         }
 
-        private bool IsActiveFault(FaultData fault)
+        private bool IsMeasuredFault(FaultData fault)
         {
             return fault.FaultStatus == FaultStatus.FAULT || fault.FaultStatus == FaultStatus.ROOTFAULT;
         }
 
-        private bool HasActiveAncestor(FaultData fault, Dictionary<string, FaultData> lookup)
+        private void MarkConsequences(string parentName, Dictionary<string, FaultData> lookup, HashSet<string> visited)
+        {
+            if (!visited.Add(parentName))
+            {
+                return;
+            }
+
+            foreach (string childName in GetDirectChildren(parentName))
+            {
+                if (!lookup.TryGetValue(childName, out FaultData child))
+                {
+                    continue;
+                }
+
+                // Only inferred, not measured, children are marked as consequences.
+                // Real FAULT and ROOTFAULT values must not be overwritten.
+                if (child.FaultStatus == FaultStatus.WORKING || child.FaultStatus == FaultStatus.CONSEQUENCE)
+                {
+                    child.FaultStatus = FaultStatus.CONSEQUENCE;
+                    MarkConsequences(childName, lookup, visited);
+                }
+                else if (IsMeasuredFault(child))
+                {
+                    MarkConsequences(childName, lookup, visited);
+                }
+            }
+        }
+
+        private IEnumerable<string> GetDirectChildren(string parentName)
+        {
+            return parentMap
+                .Where(item => item.Value == parentName)
+                .Select(item => item.Key);
+        }
+
+        private bool HasMeasuredAncestor(FaultData fault, Dictionary<string, FaultData> lookup)
         {
             string currentName = fault.Name;
             HashSet<string> visited = new HashSet<string>();
@@ -122,7 +164,7 @@ namespace DiagnoseDashboard.Data
                     return false;
                 }
 
-                if (lookup.TryGetValue(parentName, out FaultData parent) && IsActiveFault(parent))
+                if (lookup.TryGetValue(parentName, out FaultData parent) && IsMeasuredFault(parent))
                 {
                     return true;
                 }
