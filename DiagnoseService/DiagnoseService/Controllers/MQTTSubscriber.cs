@@ -20,6 +20,11 @@ namespace DiagnoseService.Controllers
         public static string bottleState = "OFFLINE";
         public static Diagnoses diagnose = new Diagnoses();
 
+        private static DateTime carStateLastUpdate = DateTime.MinValue;
+        private static DateTime tankStateLastUpdate = DateTime.MinValue;
+        private static DateTime bottleStateLastUpdate = DateTime.MinValue;
+        private static readonly TimeSpan deviceStateTimeout = TimeSpan.FromSeconds(5);
+
         // Alapértelmezetten hamis, tehát induláskor "nem elérhető"-nek tekintjük
         private static bool tankReaderOk = false;
         private static bool whReaderOk = false;
@@ -30,6 +35,36 @@ namespace DiagnoseService.Controllers
 
         private static MqttFactory mqttFactoryPublish = new MqttFactory();
         public static IMqttClient mqttClientPublish = mqttFactoryPublish.CreateMqttClient();
+
+        public static string GetCarStateSnapshot()
+        {
+            return GetFreshStateOrOffline(carState, carStateLastUpdate);
+        }
+
+        public static string GetTankStateSnapshot()
+        {
+            return GetFreshStateOrOffline(tankState, tankStateLastUpdate);
+        }
+
+        public static string GetBottleStateSnapshot()
+        {
+            return GetFreshStateOrOffline(bottleState, bottleStateLastUpdate);
+        }
+
+        private static string GetFreshStateOrOffline(string state, DateTime lastUpdate)
+        {
+            if (lastUpdate == DateTime.MinValue)
+            {
+                return "OFFLINE";
+            }
+
+            if (DateTime.UtcNow - lastUpdate > deviceStateTimeout)
+            {
+                return "OFFLINE";
+            }
+
+            return state;
+        }
 
         public async Task Publish()
         {
@@ -176,6 +211,7 @@ namespace DiagnoseService.Controllers
             mqttClientCar.UseApplicationMessageReceivedHandler(e =>
             {
                 carState = Encoding.UTF8.GetString(e.ApplicationMessage.Payload);
+                carStateLastUpdate = DateTime.UtcNow;
                 Console.WriteLine($"Received diagnoses - " + carState);
             });
             await mqttClientCar.ConnectAsync(options);
@@ -203,6 +239,7 @@ namespace DiagnoseService.Controllers
             mqttClientBottle.UseApplicationMessageReceivedHandler(e =>
             {
                 bottleState = Encoding.UTF8.GetString(e.ApplicationMessage.Payload);
+                bottleStateLastUpdate = DateTime.UtcNow;
                 Console.WriteLine($"Received Bottles are - " + bottleState);
             });
             await mqttClientBottle.ConnectAsync(options);
@@ -228,6 +265,7 @@ namespace DiagnoseService.Controllers
             mqttClientTank.UseApplicationMessageReceivedHandler(e =>
             {
                 tankState = Encoding.UTF8.GetString(e.ApplicationMessage.Payload);
+                tankStateLastUpdate = DateTime.UtcNow;
                 Console.WriteLine($"Received diagnoses - " + tankState);
             });
             await mqttClientTank.ConnectAsync(options);
