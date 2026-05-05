@@ -9,6 +9,7 @@ namespace DiagnoseDashboard.Data
     {
         ROOTFAULT,
         FAULT,
-        WORKING
+        WORKING,
+        CONSEQUENCE
     }
 }
