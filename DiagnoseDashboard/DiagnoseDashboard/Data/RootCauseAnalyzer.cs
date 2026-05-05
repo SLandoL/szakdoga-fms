@@ -4,16 +4,15 @@ using System.Linq;
 namespace DiagnoseDashboard.Data
 {
     /// <summary>
-    /// Performs the root cause analysis on the in-memory FaultData list.
+    /// Performs root cause analysis on the in-memory FaultData list.
     ///
-    /// The previous implementation selected root faults mainly by priority. That made it hard
-    /// to express explicit cause-effect relationships between faults. This class keeps the
-    /// hierarchy in code for now, so the RCA rules can be improved without changing the
-    /// database schema or running a risky migration in the first development step.
+    /// The hierarchy is intentionally kept as an explicit code-level map in this development
+    /// step. This avoids a database migration while still making the cause-effect relations
+    /// between faults clear and reviewable.
     /// </summary>
     public class RootCauseAnalyzer
     {
-        private readonly Dictionary<string, string> parentMap = new Dictionary<string, string>
+        private readonly Dictionary<string, string?> parentMap = new Dictionary<string, string?>
         {
             // Top-level communication and power faults
             { "KommRendszer", null },
@@ -21,7 +20,7 @@ namespace DiagnoseDashboard.Data
 
             // Communication centre level
             { "KommKozpont", "KommRendszer" },
-            { "KommKozpontUp", "KommRendszer" },
+            { "KommKozpontUp", "KommKozpont" },
             { "AramKommKozpont", "AramRendszer" },
 
             // Device-level communication branches
@@ -64,20 +63,15 @@ namespace DiagnoseDashboard.Data
 
         public void PropagateFaults(List<FaultData> faults)
         {
-            if (faults == null)
-            {
-                return;
-            }
-
-            Dictionary<string, FaultData> lookup = BuildLookup(faults);
-
-            foreach (FaultData activeFault in lookup.Values
-                .Where(IsActiveFault)
-                .OrderByDescending(f => f.Priority)
-                .ThenBy(f => f.Name))
-            {
-                PropagateFrom(activeFault.Name, lookup, new HashSet<string>());
-            }
+            // In the first RCA refactor this method deliberately does not change FaultStatus.
+            // The project currently has only WORKING, FAULT and ROOTFAULT states. If propagated
+            // consequences were also written as FAULT, the dashboard could no longer distinguish
+            // real measured faults from inferred consequence faults.
+            //
+            // The explicit hierarchy is therefore used only by DetectRootCauses() to suppress
+            // lower-level active faults when an active ancestor is already present. A later UI or
+            // data-model refactor can add a separate CONSEQUENCE/DERIVED state if consequence
+            // visualisation is needed.
         }
 
         public List<FaultData> DetectRootCauses(List<FaultData> faults)
@@ -116,42 +110,12 @@ namespace DiagnoseDashboard.Data
             return fault.FaultStatus == FaultStatus.FAULT || fault.FaultStatus == FaultStatus.ROOTFAULT;
         }
 
-        private void PropagateFrom(string parentName, Dictionary<string, FaultData> lookup, HashSet<string> visited)
-        {
-            if (!visited.Add(parentName))
-            {
-                return;
-            }
-
-            foreach (string childName in GetDirectChildren(parentName))
-            {
-                if (!lookup.TryGetValue(childName, out FaultData child))
-                {
-                    continue;
-                }
-
-                if (child.FaultStatus == FaultStatus.WORKING)
-                {
-                    child.FaultStatus = FaultStatus.FAULT;
-                }
-
-                PropagateFrom(childName, lookup, visited);
-            }
-        }
-
-        private IEnumerable<string> GetDirectChildren(string parentName)
-        {
-            return parentMap
-                .Where(item => item.Value == parentName)
-                .Select(item => item.Key);
-        }
-
         private bool HasActiveAncestor(FaultData fault, Dictionary<string, FaultData> lookup)
         {
             string currentName = fault.Name;
             HashSet<string> visited = new HashSet<string>();
 
-            while (parentMap.TryGetValue(currentName, out string parentName) && !string.IsNullOrEmpty(parentName))
+            while (parentMap.TryGetValue(currentName, out string? parentName) && !string.IsNullOrEmpty(parentName))
             {
                 if (!visited.Add(parentName))
                 {
