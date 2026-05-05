@@ -55,6 +55,11 @@ namespace DiagnoseDashboard.Data
             }
         }
 
+        private bool IsOnlineState(string state)
+        {
+            return string.Equals(state?.Trim(), "ONLINE", StringComparison.OrdinalIgnoreCase);
+        }
+
         public async Task TreeSearchW(string fault)
         {
             await Task.Run(() =>
@@ -86,9 +91,6 @@ namespace DiagnoseDashboard.Data
             ResetFaultStatuses();
 
             // 1. SZINT: RENDSZER KOMMUNIKÁCIÓ ELLENŐRZÉSE
-            // Ha ez hibás, csak a legfelsőbb mért hibát jelöljük. A következményhibákat
-            // nem állítjuk mesterségesen FAULT-ra, mert az elmosná a mért és a származtatott
-            // hibák közötti különbséget.
             if (diagnoses.KommRendszer.Data)
             {
                 await TreeSearchF(FaultSearch.KommRendszer.Name);
@@ -116,9 +118,9 @@ namespace DiagnoseDashboard.Data
 
             // --- A) KOCSI (CAR) ---
             string carstateTemp = await dashboardData.GetCarState();
-            if (carstateTemp == "ONLINE")
+            if (IsOnlineState(carstateTemp))
             {
-                carstate = carstateTemp;
+                carstate = carstateTemp?.Trim();
                 await TreeSearchW(FaultSearch.KommKocsi.Name);
             }
             else
@@ -129,9 +131,9 @@ namespace DiagnoseDashboard.Data
 
             // --- B) TARTÁLY (TANK) ---
             string tankStateTemp = await dashboardData.GetTankState();
-            if (tankStateTemp == "ONLINE")
+            if (IsOnlineState(tankStateTemp))
             {
-                tankState = tankStateTemp;
+                tankState = tankStateTemp?.Trim();
                 await TreeSearchW(FaultSearch.KommTartaly.Name);
 
                 if (diagnoses.AramTartaly.Data) await TreeSearchF(FaultSearch.AramTartaly.Name); else await TreeSearchW(FaultSearch.AramTartaly.Name);
@@ -145,9 +147,9 @@ namespace DiagnoseDashboard.Data
 
             // --- C) BOTTLE (KOCSI ÜVEGEK) ---
             string bottleStateTemp = await dashboardData.GetBottlesState();
-            if (bottleStateTemp == "ONLINE")
+            if (IsOnlineState(bottleStateTemp))
             {
-                bottleState = bottleStateTemp;
+                bottleState = bottleStateTemp?.Trim();
                 await TreeSearchW(FaultSearch.KommKocsiEsp.Name);
             }
             else
