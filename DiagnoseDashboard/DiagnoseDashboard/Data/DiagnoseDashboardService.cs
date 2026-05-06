@@ -38,7 +38,7 @@ namespace DiagnoseDashboard.Data
 
         private void RunRootCauseAnalysis()
         {
-            rootCauseAnalyzer.ResetRootFaults(faultSearch.faultDatas);
+            rootCauseAnalyzer.ResetAnalysisStatuses(faultSearch.faultDatas);
             rootCauseAnalyzer.PropagateFaults(faultSearch.faultDatas);
             List<FaultData> rootCauses = rootCauseAnalyzer.DetectRootCauses(faultSearch.faultDatas);
 
