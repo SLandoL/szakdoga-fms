@@ -117,21 +117,41 @@ namespace DiagnoseDashboard.Data
             // Ide csak akkor jutunk, ha a Rendszer és a Központ rendben van.
 
             // --- A) KOCSI (CAR) ---
+            // A kocsi alatti ESP csak akkor számít külön mért hibának, ha maga a kocsi online.
+            // Ha a kocsi offline, akkor a gyerek állapota nem megbízható, ezért azt az RCA
+            // CONSEQUENCE-ként származtatja a KommKocsi hibából.
             string carstateTemp = await dashboardData.GetCarState();
-            if (IsOnlineState(carstateTemp))
+            bool carOnline = IsOnlineState(carstateTemp);
+            if (carOnline)
             {
                 carstate = carstateTemp?.Trim();
                 await TreeSearchW(FaultSearch.KommKocsi.Name);
+
+                string bottleStateTemp = await dashboardData.GetBottlesState();
+                if (IsOnlineState(bottleStateTemp))
+                {
+                    bottleState = bottleStateTemp?.Trim();
+                    await TreeSearchW(FaultSearch.KommKocsiEsp.Name);
+                }
+                else
+                {
+                    bottleState = "OFFLINE";
+                    await TreeSearchF(FaultSearch.KommKocsiEsp.Name);
+                }
             }
             else
             {
                 carstate = "OFFLINE";
+                bottleState = "UNKNOWN";
                 await TreeSearchF(FaultSearch.KommKocsi.Name);
             }
 
             // --- B) TARTÁLY (TANK) ---
+            // A tartály alatti hibákat is csak akkor vesszük külön mért hibának, ha maga a
+            // tartálykommunikáció működik. Offline tartálynál ezek következményként jelennek meg.
             string tankStateTemp = await dashboardData.GetTankState();
-            if (IsOnlineState(tankStateTemp))
+            bool tankOnline = IsOnlineState(tankStateTemp);
+            if (tankOnline)
             {
                 tankState = tankStateTemp?.Trim();
                 await TreeSearchW(FaultSearch.KommTartaly.Name);
@@ -145,23 +165,10 @@ namespace DiagnoseDashboard.Data
                 await TreeSearchF(FaultSearch.KommTartaly.Name);
             }
 
-            // --- C) BOTTLE (KOCSI ÜVEGEK) ---
-            string bottleStateTemp = await dashboardData.GetBottlesState();
-            if (IsOnlineState(bottleStateTemp))
-            {
-                bottleState = bottleStateTemp?.Trim();
-                await TreeSearchW(FaultSearch.KommKocsiEsp.Name);
-            }
-            else
-            {
-                bottleState = "OFFLINE";
-                await TreeSearchF(FaultSearch.KommKocsiEsp.Name);
-            }
-
-            // --- D) RFID ---
+            // --- C) RFID ---
             // Két fő hibaforrás: kommunikációs hiba és olvasási/rakományegyezési hiba.
-            // Ezeket külön mért hibaként kezeljük; a köztük lévő ok-okozati kapcsolatot az RCA
-            // parentMap dönti el, nem az állapotfrissítés.
+            // A GyarRfidOlv csak akkor mért hiba, ha az RFID kommunikáció működik, de a rakomány nem egyezik.
+            // Ha az RFID olvasók nem elérhetők, a GyarRfidOlv CONSEQUENCE lesz a KommRfidUp alatt.
             if (diagnoses.KommRfidUp.Data)
             {
                 await TreeSearchF(FaultSearch.KommRfidUp.Name);
@@ -169,20 +176,21 @@ namespace DiagnoseDashboard.Data
             else
             {
                 await TreeSearchW(FaultSearch.KommRfidUp.Name);
-            }
 
-            if (diagnoses.GyarRfidOlv.Data)
-            {
-                await TreeSearchF(FaultSearch.GyarRfidOlv.Name);
-            }
-            else
-            {
-                await TreeSearchW(FaultSearch.GyarRfidOlv.Name);
+                if (diagnoses.GyarRfidOlv.Data)
+                {
+                    await TreeSearchF(FaultSearch.GyarRfidOlv.Name);
+                }
+                else
+                {
+                    await TreeSearchW(FaultSearch.GyarRfidOlv.Name);
+                }
             }
 
             // --- EGYÉB HIBÁK AUTOMATIKUS FRISSÍTÉSE ---
             // Minden olyan hiba, amit manuálisan nem fedtünk le fentebb. Itt már nincs
             // hierarchikus terjesztés: csak az adott diagnosztikai bemenet saját állapotát írjuk.
+            // Az offline szülő alatti gyermekeket szándékosan kihagyjuk, hogy az RCA CONSEQUENCE-ként jelölje őket.
             foreach (PropertyInfo prop in
                     typeof(Diagnoses)
                     .GetProperties()
@@ -190,13 +198,7 @@ namespace DiagnoseDashboard.Data
             {
                 DiagnoseData currentDiagnose = (DiagnoseData)prop.GetValue(diagnoses, null);
 
-                if (currentDiagnose.Name == FaultSearch.KommRendszer.Name ||
-                    currentDiagnose.Name == FaultSearch.KommKozpont.Name ||
-                    currentDiagnose.Name == FaultSearch.KommKozpontUp.Name ||
-                    currentDiagnose.Name == FaultSearch.KommKocsi.Name ||
-                    currentDiagnose.Name == FaultSearch.KommTartaly.Name ||
-                    currentDiagnose.Name == FaultSearch.KommRfidUp.Name ||
-                    currentDiagnose.Name == FaultSearch.GyarRfidOlv.Name)
+                if (ShouldSkipGenericDiagnose(currentDiagnose.Name, carOnline, tankOnline))
                 {
                     continue;
                 }
@@ -206,6 +208,40 @@ namespace DiagnoseDashboard.Data
                     await TreeSearchF(currentDiagnose.Name);
                 }
             }
+        }
+
+        private bool ShouldSkipGenericDiagnose(string diagnoseName, bool carOnline, bool tankOnline)
+        {
+            if (diagnoseName == FaultSearch.KommRendszer.Name ||
+                diagnoseName == FaultSearch.KommKozpont.Name ||
+                diagnoseName == FaultSearch.KommKozpontUp.Name ||
+                diagnoseName == FaultSearch.KommKocsi.Name ||
+                diagnoseName == FaultSearch.KommKocsiEsp.Name ||
+                diagnoseName == FaultSearch.KommTartaly.Name ||
+                diagnoseName == FaultSearch.KommRfidUp.Name ||
+                diagnoseName == FaultSearch.GyarRfidOlv.Name)
+            {
+                return true;
+            }
+
+            if (!carOnline &&
+                (diagnoseName == FaultSearch.GyarTargoncaSzenz.Name ||
+                 diagnoseName == FaultSearch.AramKocsi.Name ||
+                 diagnoseName == FaultSearch.KommTargoncaArammero.Name))
+            {
+                return true;
+            }
+
+            if (!tankOnline &&
+                (diagnoseName == FaultSearch.AramTartaly.Name ||
+                 diagnoseName == FaultSearch.GyarSzalagSzenz.Name ||
+                 diagnoseName == FaultSearch.GyarTartalySzenz.Name ||
+                 diagnoseName == FaultSearch.KommTartalyArammero.Name))
+            {
+                return true;
+            }
+
+            return false;
         }
 
         public async Task<bool> GetMqttStatus()
