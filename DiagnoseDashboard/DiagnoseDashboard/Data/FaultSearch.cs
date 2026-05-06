@@ -96,6 +96,7 @@ namespace DiagnoseDashboard.Data
             }
         }
 
+        [Obsolete("Use RootCauseAnalyzer.DetectRootCauses instead. This old method keeps the previous priority-based root fault selection only for backward compatibility.")]
         public FaultPriority RootFaultDetectIndex()
         {
             Led = false;
@@ -116,6 +117,7 @@ namespace DiagnoseDashboard.Data
             return maxPriority;
         }
 
+        [Obsolete("Use RootCauseAnalyzer.DetectRootCauses instead. This old method marks every fault with the selected priority as ROOTFAULT and does not use the explicit fault hierarchy.")]
         public void RootFaultDetect(FaultPriority maxPriority)
         {
             foreach (FaultData item in faultDatas)
