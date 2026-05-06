@@ -21,7 +21,7 @@ Fontos kulonbseg: az analyzer-szintu tesztek kozvetlenul a `RootCauseAnalyzer` o
 | RCA-U9 | `KommRfidUp = FAULT`, `GyarRfidOlv = FAULT` | `KommRfidUp = ROOTFAULT`, `GyarRfidOlv = FAULT` | A propagation nem irhatja felul a mert `FAULT` allapotot `CONSEQUENCE`-re |
 | RCA-U10 | `KommKozpont = FAULT`, `KommRfidUp = FAULT`, `GyarRfidOlv = FAULT` | Csak `KommKozpont = ROOTFAULT`, az alatta levo mert hibak `FAULT` allapotban maradnak | Analyzer-szintu eset, amikor tobb mert hiba egyszerre van a listaban |
 | RCA-U11 | `KommTartaly = FAULT`, `AramTartaly = FAULT` | `KommTartaly = ROOTFAULT`, `AramTartaly = FAULT`, a tobbi tartalyagi gyermek `CONSEQUENCE` | Aktiv mert gyermek nem lesz kulon root, de nem is lesz consequence |
-| RCA-U12 | Elozo ciklusban `ROOTFAULT` es `CONSEQUENCE`, kovetkezo ciklusban nincs aktiv hiba | Nincs `ROOTFAULT`, nincs `CONSEQUENCE`, LED kikapcsol | Ellenorzi a ciklus eleji allapotfrissitest es resetet |
+| RCA-U12 | Elozo elemzesi korbol `ROOTFAULT` es `CONSEQUENCE` jelolesek maradtak a listaban | `ResetAnalysisStatuses()` utan a `ROOTFAULT` visszaall `FAULT`-ra, a `CONSEQUENCE` visszaall `WORKING`-re | Analyzer API-szintu reset teszt, nem teljes rendszer-reset |
 
 ## 2. DiagnoseDashboardService integracios tesztek
 
@@ -35,7 +35,7 @@ Fontos kulonbseg: az analyzer-szintu tesztek kozvetlenul a `RootCauseAnalyzer` o
 | RCA-S6 | RFID olvasok nem elerhetok | `KommRfidUp = ROOTFAULT`, `GyarRfidOlv = CONSEQUENCE` | A rakomanyhiba nem lehet mert hiba, ha az olvasok nem mukodnek |
 | RCA-S7 | RFID olvasok mukodnek, rakomany nem egyezik | `GyarRfidOlv = ROOTFAULT` | Valodi gyartasi/olvasasi hiba kommunikacios hiba nelkul |
 | RCA-S8 | MQTT / `KommKozpont` hiba | `KommKozpont = ROOTFAULT`, also kommunikacios agak `CONSEQUENCE` | A service koran visszater, az also szintu jelek nem lesznek kulon mert hibak |
-| RCA-S9 | Hiba megszunik | Nincs `ROOTFAULT`, nincs `CONSEQUENCE`, LED kikapcsol | Reset es ujraszamolas ellenorzese |
+| RCA-S9 | Hiba megszunik egy teljes service ciklus utan | Nincs `ROOTFAULT`, nincs `CONSEQUENCE`, LED kikapcsol | A teljes torlest a `DiagnoseDashboardService.ResetFaultStatuses()` es az RCA ujraszamolasa egyutt vegzi |
 | RCA-S10 | Heartbeat 15 masodpercnel ritkabb | Az erintett eszkoz `FAULT` vagy `ROOTFAULT` lesz | Az eszkozoknek 15 masodpercen belul kell allapotot kuldeniuk |
 
 ## 3. Kezi ellenorzes javasolt menete
