@@ -13,7 +13,7 @@ namespace DiagnoseDashboard.Data
     /// </summary>
     public class RootCauseAnalyzer
     {
-        private readonly Dictionary<string, string?> parentMap = new Dictionary<string, string?>
+        private readonly Dictionary<string, string> parentMap = new Dictionary<string, string>
         {
             // Top-level communication and power faults
             { "KommRendszer", null },
@@ -171,7 +171,7 @@ namespace DiagnoseDashboard.Data
             string currentName = fault.Name;
             HashSet<string> visited = new HashSet<string>();
 
-            while (parentMap.TryGetValue(currentName, out string? parentName) && !string.IsNullOrEmpty(parentName))
+            while (parentMap.TryGetValue(currentName, out string parentName) && !string.IsNullOrEmpty(parentName))
             {
                 if (!visited.Add(parentName))
                 {
