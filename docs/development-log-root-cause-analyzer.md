@@ -1,4 +1,4 @@
-# Fejlesztési napló – 1. szakasz: diagnosztikai logika rendbetétele
+# Fejlesztési napló - 1. szakasz: diagnosztikai logika rendbetétele
 
 ## Cél
 
@@ -80,8 +80,6 @@ Példa az új logikára:
 
 Fontos RFID döntés: a `GyarRfidOlv` hibát a `KommRfidUp` alá tettem. Ennek oka, hogy ha egyszerre aktív az RFID kommunikációs hiba és az RFID olvasási/rakományegyezési hiba, akkor a kommunikációs hiba erősebb, magasabb szintű ok. Ha viszont csak a `GyarRfidOlv` aktív, akkor önálló gyökérhiba marad.
 
-A `KommKozpontUp` kezelését is pontosítottam. Korábban a `DiagnoseAnalyse()` ezt a bemeneti hibát automatikusan `KommKozpont` hibára képezte le. A javítás után a `KommKozpontUp` önálló diagnosztikai jelként is megjelenhet, ha maga az MQTT státusz és a központ általános kommunikációs állapota nem hibás. Ha viszont az MQTT nem elérhető vagy a `KommKozpont` hibás, akkor a magasabb szintű `KommKozpont` lesz a gyökérhiba.
-
 ### 4. RCA bekötése a `DiagnoseDashboardService` osztályba
 
 A `DiagnoseDashboardService` konstruktorába bekerült a `RootCauseAnalyzer` függőség. A `GetDiagnosesAsync()` metódus a diagnózisok lekérése és a hibaállapotok frissítése után meghívja az új RCA-folyamatot:
@@ -112,7 +110,58 @@ TreeSearchW("KommRfidUp") -> csak a KommRfidUp lesz WORKING
 
 A diagnosztikai ciklus elején a service visszaállítja a hibákat `WORKING` állapotba, majd csak az aktuálisan mért vagy explicit módon ellenőrzött hibákat állítja `FAULT` állapotba. Ezután a `RootCauseAnalyzer.PropagateFaults()` külön lépésben állítja be a `CONSEQUENCE` állapotokat.
 
-### 6. Dashboard megjelenítés bővítése
+### 6. RFID diagnosztika javítása
+
+A korábbi RFID backend logika egy kommunikációs olvasóhiba esetén a `GyarRfidOlv` hibát is mért hibaként állította be. Ez ellentmondott a `CONSEQUENCE` modellnek, mert ha az RFID olvasók nem működnek, akkor az olvasási/rakományegyezési eredmény nem tekinthető megbízható saját hibának.
+
+A javított logika:
+
+```csharp
+bool readersOk = tankReaderOk && whReaderOk;
+
+diagnose.KommRfidUp.Data = !readersOk;
+diagnose.GyarRfidOlv.Data = readersOk && !rakomanyOk;
+```
+
+Így:
+
+- ha az olvasók nem működnek, akkor `KommRfidUp` lesz mért hiba, a `GyarRfidOlv` pedig az RCA alapján `CONSEQUENCE`,
+- ha az olvasók működnek, de a rakomány nem egyezik, akkor `GyarRfidOlv` lesz önálló mért hiba,
+- ha minden rendben van, egyik RFID hiba sem aktív.
+
+### 7. Szülő-gyermek ellenőrzések pontosítása a service-ben
+
+A kocsi és tartály alatti gyermekhibák csak akkor kerülnek külön mért hibaként értékelésre, ha a szülő komponens kommunikációja működik.
+
+Példa:
+
+```text
+KommKocsi offline -> KommKocsi = FAULT, KommKocsiEsp = CONSEQUENCE
+KommKocsi online + bottle ESP offline -> KommKocsiEsp = FAULT
+```
+
+Ugyanez a tartályágra is érvényes:
+
+```text
+KommTartaly offline -> tartályági gyermekek CONSEQUENCE
+KommTartaly online + AramTartaly hiba -> AramTartaly FAULT/ROOTFAULT
+```
+
+Ez azért fontos, mert offline szülő mellett a gyermek állapota nem megbízható saját mérésként. Ilyenkor a gyermek nem külön ok, hanem a felsőbb kommunikációs hiba következménye.
+
+### 8. Eszközállapot heartbeat kezelése
+
+A `DiagnoseService` korábban kiolvasás után `OFFLINE` értékre állította vissza a kocsi, tartály és bottle ESP állapotát. Ez fals hibajelzést okozhatott, mert a dashboard pollingja maga törölte az `ONLINE` állapotot.
+
+A javítás után az endpointok nem destruktívak, hanem snapshotot adnak vissza. Emellett timestamp alapú frissességellenőrzés került bevezetésre. Az eszközállapot timeout 15 másodperc, ami illeszkedik a `car.py` és `espbottles.ino` heartbeat működéséhez.
+
+A dashboard oldali ellenőrzés `Trim()` és case-insensitive összehasonlítást használ:
+
+```csharp
+string.Equals(state?.Trim(), "ONLINE", StringComparison.OrdinalIgnoreCase)
+```
+
+### 9. Dashboard megjelenítés bővítése
 
 A `Dashboard.razor` már nem külön `if/else` blokkokkal jeleníti meg minden hiba állapotát, hanem hibalistákból rendereli a gombokat. Ez csökkenti az ismétlődő Razor kódot, és egyszerűbbé teszi az új állapotok megjelenítését.
 
@@ -128,15 +177,14 @@ Ehhez új CSS osztály készült:
 .button_consequence
 ```
 
-A jelmagyarázat is bővült, így a kezelő külön látja:
+A jelmagyarázatból kikerült a korábbi „Nem elérhető” sor, mert ehhez nem tartozott külön `FaultStatus`. A dashboard jelenlegi állapotai:
 
 - elérhető,
-- nem elérhető,
-- hiba,
+- mért hiba,
 - következmény,
 - gyökérhiba.
 
-### 7. Dependency injection regisztráció
+### 10. Dependency injection regisztráció
 
 A `Startup.cs` fájlban regisztrálva lett az új osztály:
 
@@ -170,6 +218,17 @@ Példák:
 | `GyarRfidOlv = FAULT` | `GyarRfidOlv = ROOTFAULT` |
 | `KommTartaly = FAULT`, `AramTartaly = FAULT` | `KommTartaly = ROOTFAULT`, `AramTartaly = FAULT` |
 
+## Analyzer és service viselkedés különbsége
+
+Az analyzer önmagában tetszőleges `FaultData` listán működik, ezért unit tesztben több mért hiba is egyszerre megadható. A service-integráció ezzel szemben magasabb szintű kommunikációs hiba esetén korán visszatérhet. Ez szándékos, mert ha például a központi kommunikáció hibás, akkor az alsóbb szintű komponensek diagnosztikai jelei nem feltétlenül megbízhatóak.
+
+Ezért a szakdolgozati értékelésben kétféle tesztet érdemes külön kezelni:
+
+```text
+RootCauseAnalyzer egységtesztek
+DiagnoseDashboardService integrációs tesztek
+```
+
 ## Miért jobb ez a megoldás?
 
 A módosítás után a rendszer nem pusztán prioritás alapján választ gyökérhibát, hanem a hibák közötti explicit ok-okozati kapcsolatokat is figyelembe veszi. A ténylegesen mért hibákat és a származtatott következményeket külön állapot reprezentálja, ezért a dashboard nem állítja tévesen, hogy minden érintett komponens saját hibát jelzett.
@@ -182,6 +241,7 @@ A fejlesztés további előnyei:
 - az állapotfrissítés nem terjeszt automatikusan gyermekhibákat `FAULT` állapotként,
 - a mért hiba és a következményhiba külön státuszt kapott,
 - az RFID kommunikációs és RFID olvasási hiba viszonya tisztábban kezelhető,
+- a szülő offline állapota mellett a gyermekek nem válnak tévesen mért hibává,
 - a dashboard jelmagyarázata bővült a következményhibákkal,
 - az RCA később unit tesztekkel vagy részletesebb szabályokkal bővíthető.
 
@@ -193,6 +253,6 @@ Következő lehetséges lépések:
 
 1. unit tesztek írása a `RootCauseAnalyzer` osztályra,
 2. külön következményhiba-panel vagy fa nézet bevezetése a dashboardon,
-3. RFID állapotmodell bevezetése,
+3. RFID állapotmodell finomítása,
 4. dashboardon külön gyökérhiba-összefoglaló panel kialakítása,
 5. később valódi `ParentFaultId` adatmodell bevezetése adatbázis-migrációval.
