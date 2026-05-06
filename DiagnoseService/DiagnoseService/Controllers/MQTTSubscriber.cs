@@ -23,7 +23,7 @@ namespace DiagnoseService.Controllers
         private static DateTime carStateLastUpdate = DateTime.MinValue;
         private static DateTime tankStateLastUpdate = DateTime.MinValue;
         private static DateTime bottleStateLastUpdate = DateTime.MinValue;
-        private static readonly TimeSpan deviceStateTimeout = TimeSpan.FromSeconds(5);
+        private static readonly TimeSpan deviceStateTimeout = TimeSpan.FromSeconds(15);
 
         // Alapértelmezetten hamis, tehát induláskor "nem elérhető"-nek tekintjük
         private static bool tankReaderOk = false;
@@ -118,8 +118,9 @@ namespace DiagnoseService.Controllers
                 var rakomanyEgyezesFilter = new TopicFilterBuilder().WithTopic("Rakomany_egyezes").Build();
                 await mqttClient.SubscribeAsync(rakomanyEgyezesFilter);
 
-                // JAVÍTÁS: Kapcsolódáskor azonnal lefuttatjuk a diagnosztikát az alapértelmezett értékekkel.
-                // Így ha az ESP néma (nincs áram alatt), a rendszer azonnal hibát jelez.
+                // Kapcsolódáskor az alapértelmezett értékek alapján még nincs olvasó-kommunikáció,
+                // ezért a rendszer kommunikációs RFID hibát jelezhet. A rakományhiba csak akkor
+                // lesz mért hiba, ha az olvasók működnek, de a rakomány nem egyezik.
                 UpdateRfidDiagnose();
             });
 
@@ -177,20 +178,18 @@ namespace DiagnoseService.Controllers
 
         private static void UpdateRfidDiagnose()
         {
-            // Ha mindkét olvasó "True"-t küldött, akkor a kommunikáció rendben van.
+            // Ha mindkét olvasó True-t küldött, akkor az RFID kommunikáció rendben van.
             bool readersOk = tankReaderOk && whReaderOk;
 
-            // Ha az olvasók jók ÉS a rakomány is egyezik, akkor minden rendben.
-            bool allOk = readersOk && rakomanyOk;
-
-            // JAVÍTÁS: A logikát megfordítjuk. A Data mező a hibát jelzi (True = HIBA).
-            // Ha allOk hamis (pl. ESP offline), akkor ez True lesz -> Hiba jelzés.
-            diagnose.GyarRfidOlv.Data = !allOk;
-
-            // JAVÍTÁS: Külön kezeljük a kommunikációs hibát.
+            // A kommunikációs hiba mért hiba, ha legalább az egyik olvasó nem működik.
             diagnose.KommRfidUp.Data = !readersOk;
 
-            Console.WriteLine($"RFID diagnózis frissítve. Tank: {tankReaderOk}, WH: {whReaderOk}, Egyenlő: {rakomanyOk}, GyárHiba: {!allOk}, KommHiba: {!readersOk}");
+            // A gyártási / rakományegyezési hiba csak akkor mért hiba, ha az olvasók működnek,
+            // de a rakomány nem egyezik. Ha az olvasók nem elérhetők, akkor a GyarRfidOlv
+            // állapotát az RCA CONSEQUENCE-ként származtatja a KommRfidUp hibából.
+            diagnose.GyarRfidOlv.Data = readersOk && !rakomanyOk;
+
+            Console.WriteLine($"RFID diagnózis frissítve. Tank: {tankReaderOk}, WH: {whReaderOk}, Egyenlő: {rakomanyOk}, KommHiba: {!readersOk}, GyárHiba: {readersOk && !rakomanyOk}");
         }
 
         public async Task SubscribeCarState()
