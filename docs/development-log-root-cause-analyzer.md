@@ -25,15 +25,15 @@ Létrejött az alábbi fájl:
 DiagnoseDashboard/DiagnoseDashboard/Data/RootCauseAnalyzer.cs
 ```
 
-Az új osztály három fő felelősséget kapott:
+Az új osztály fő felelősségei:
 
 ```csharp
-public void ResetRootFaults(List<FaultData> faults)
+public void ResetAnalysisStatuses(List<FaultData> faults)
 public void PropagateFaults(List<FaultData> faults)
 public List<FaultData> DetectRootCauses(List<FaultData> faults)
 ```
 
-A `ResetRootFaults` visszaállítja a korábban kijelölt `ROOTFAULT` állapotokat `FAULT` állapotba. Erre azért van szükség, mert minden új diagnosztikai ciklusban újra kell számolni, mely hibák tekinthetők valódi gyökérhibának.
+A `ResetAnalysisStatuses` eltávolítja az előző elemzési körből megmaradt RCA-jelöléseket: a `ROOTFAULT` visszaáll `FAULT` állapotra, a `CONSEQUENCE` pedig `WORKING` állapotra. Erre azért van szükség, mert minden új diagnosztikai ciklusban újra kell számolni a gyökérhibákat és következményeket. A régi `ResetRootFaults` metódus megmaradt kompatibilitási okból, de `[Obsolete]` jelölést kapott.
 
 A `PropagateFaults` tényleges hierarchikus propagation-t végez. Az aktív, ténylegesen mért hibákból (`FAULT` vagy `ROOTFAULT`) kiindulva végigmegy az explicit hibatérképen, és az alatta lévő, nem mért hibákat `CONSEQUENCE` állapotra állítja. Fontos, hogy a propagation nem írja felül a `FAULT` vagy `ROOTFAULT` állapotot, tehát a mért hibák és a származtatott következmények megkülönböztethetők maradnak.
 
@@ -90,7 +90,7 @@ RunRootCauseAnalysis();
 
 A `RunRootCauseAnalysis()` lépései:
 
-1. korábbi gyökérhiba-jelölések törlése,
+1. korábbi RCA-jelölések törlése,
 2. hierarchikus propagation és `CONSEQUENCE` állapotok beállítása,
 3. gyökérhibák kiválasztása a mért hibák közül,
 4. LED állapot beállítása aszerint, hogy van-e aktív gyökérhiba.
@@ -184,7 +184,11 @@ A jelmagyarázatból kikerült a korábbi „Nem elérhető” sor, mert ehhez n
 - következmény,
 - gyökérhiba.
 
-### 10. Dependency injection regisztráció
+### 10. Régi prioritásalapú RCA út lezárása
+
+A korábbi `FaultSearch.RootFaultDetectIndex()` és `FaultSearch.RootFaultDetect(...)` metódusok már nincsenek használatban a dashboard folyamatban. Ezek `[Obsolete]` jelölést kaptak, hogy a fordító figyelmeztessen, ha valaki később újra a régi prioritásalapú logikát próbálná használni.
+
+### 11. Dependency injection regisztráció
 
 A `Startup.cs` fájlban regisztrálva lett az új osztály:
 
