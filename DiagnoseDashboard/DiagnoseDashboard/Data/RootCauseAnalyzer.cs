@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -48,17 +49,30 @@ namespace DiagnoseDashboard.Data
             { "KommKommArammero", "KommKozpont" }
         };
 
-        public void ResetRootFaults(List<FaultData> faults)
+        public void ResetAnalysisStatuses(List<FaultData> faults)
         {
             if (faults == null)
             {
                 return;
             }
 
-            foreach (FaultData fault in faults.Where(f => f.FaultStatus == FaultStatus.ROOTFAULT))
+            foreach (FaultData fault in faults)
             {
-                fault.FaultStatus = FaultStatus.FAULT;
+                if (fault.FaultStatus == FaultStatus.ROOTFAULT)
+                {
+                    fault.FaultStatus = FaultStatus.FAULT;
+                }
+                else if (fault.FaultStatus == FaultStatus.CONSEQUENCE)
+                {
+                    fault.FaultStatus = FaultStatus.WORKING;
+                }
             }
+        }
+
+        [Obsolete("Use ResetAnalysisStatuses instead. It resets both previous ROOTFAULT and CONSEQUENCE analysis markers.")]
+        public void ResetRootFaults(List<FaultData> faults)
+        {
+            ResetAnalysisStatuses(faults);
         }
 
         public void PropagateFaults(List<FaultData> faults)
