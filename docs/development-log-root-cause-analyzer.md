@@ -65,7 +65,7 @@ CONSEQUENCE = nem közvetlenül mért hiba, hanem egy aktív felsőbb hiba miatt
 
 A korábbi `ParentId`-alapú, prioritásszintre mutató logika helyett kódszintű hibatérkép került bevezetésre. Ez szándékos tervezési döntés volt: első fejlesztési lépésként nem történt adatbázis-migráció, mert az nagyobb kockázatot jelentene. A hibatérkép így gyorsan módosítható és szakmailag jól indokolható.
 
-A `parentMap` típusa `Dictionary<string, string?>`, mert a legfelső szintű hibáknak nincs szülője.
+A `parentMap` típusa a projekt nullable-beállításaihoz igazodva `Dictionary<string, string>`. A legfelső szintű hibákhoz továbbra is `null` szülőérték tartozik; ez a projekt jelenlegi, nullable reference types nélküli C# beállításaiban warning nélkül kezelhető.
 
 Példa az új logikára:
 
@@ -184,11 +184,17 @@ A jelmagyarázatból kikerült a korábbi „Nem elérhető” sor, mert ehhez n
 - következmény,
 - gyökérhiba.
 
+A Blazored Toast névtér bekerült az `_Imports.razor` fájlba, hogy a toast komponenshez kapcsolódó Razor warning megszűnjön vagy legalább a namespace-oldalról rendezett legyen.
+
 ### 10. Régi prioritásalapú RCA út lezárása
 
 A korábbi `FaultSearch.RootFaultDetectIndex()` és `FaultSearch.RootFaultDetect(...)` metódusok már nincsenek használatban a dashboard folyamatban. Ezek `[Obsolete]` jelölést kaptak, hogy a fordító figyelmeztessen, ha valaki később újra a régi prioritásalapú logikát próbálná használni.
 
-### 11. Dependency injection regisztráció
+### 11. Build warningok kezelése
+
+A PR-hoz közvetlenül kapcsolódó `CS8632` nullable warningot megszüntettem a nullable annotációk eltávolításával a `RootCauseAnalyzer` osztályból. A `.NET 5` EOL, a Refit sérülékenységi warning és az MQTT `TopicFilterBuilder` obsolete warning meglévő technikai adósságként marad, mert ezek dependency/framework frissítési feladatok, nem az RCA-refaktor részei.
+
+### 12. Dependency injection regisztráció
 
 A `Startup.cs` fájlban regisztrálva lett az új osztály:
 
