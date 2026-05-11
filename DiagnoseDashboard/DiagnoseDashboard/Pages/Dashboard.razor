@@ -14,14 +14,22 @@
         <div class="content1_dash">
             @foreach (FaultButton button in ProductionFaults)
             {
-                @RenderFaultButton(button)
+                FaultStatus status = GetFaultStatus(button.FaultName);
+                <button @key="button.FaultName" type="button" class="@GetButtonCssClass(status)" title="@GetStatusText(status)">
+                    <span class="fault_status_prefix">@GetStatusPrefix(status)</span>
+                    <span>@Localizer[button.DisplayName]</span>
+                </button>
             }
         </div>
 
         <div class="content2_dash">
             @foreach (FaultButton button in PowerFaults)
             {
-                @RenderFaultButton(button)
+                FaultStatus status = GetFaultStatus(button.FaultName);
+                <button @key="button.FaultName" type="button" class="@GetButtonCssClass(status)" title="@GetStatusText(status)">
+                    <span class="fault_status_prefix">@GetStatusPrefix(status)</span>
+                    <span>@Localizer[button.DisplayName]</span>
+                </button>
             }
         </div>
 
@@ -30,7 +38,11 @@
         <div class="content3_dash mb-2">
             @foreach (FaultButton button in CommunicationFaults)
             {
-                @RenderFaultButton(button)
+                FaultStatus status = GetFaultStatus(button.FaultName);
+                <button @key="button.FaultName" type="button" class="@GetButtonCssClass(status)" title="@GetStatusText(status)">
+                    <span class="fault_status_prefix">@GetStatusPrefix(status)</span>
+                    <span>@Localizer[button.DisplayName]</span>
+                </button>
             }
         </div>
 
@@ -74,21 +86,15 @@
         new FaultButton(FaultSearch.KommRendszer.Name, "Rendszer kommunikáció")
     };
 
-    private RenderFragment RenderFaultButton(FaultButton button) => builder =>
-    {
-        FaultStatus status = GetFaultStatus(button.FaultName);
-        builder.OpenElement(0, "button");
-        builder.AddAttribute(1, "type", "button");
-        builder.AddAttribute(2, "class", GetButtonClass(status) + " m-2");
-        builder.AddContent(3, GetStatusPrefix(status));
-        builder.AddContent(4, Localizer[button.DisplayName]);
-        builder.CloseElement();
-    };
-
     private FaultStatus GetFaultStatus(string faultName)
     {
         FaultData fault = faultSearch.faultDatas.FirstOrDefault(item => item.Name == faultName);
         return fault?.FaultStatus ?? FaultStatus.WORKING;
+    }
+
+    private string GetButtonCssClass(FaultStatus status)
+    {
+        return GetButtonClass(status) + " m-2";
     }
 
     private string GetButtonClass(FaultStatus status)
@@ -111,11 +117,26 @@
         switch (status)
         {
             case FaultStatus.ROOTFAULT:
-                return "▲ ";
+                return "▲";
             case FaultStatus.CONSEQUENCE:
-                return "↳ ";
+                return "↳";
             default:
                 return string.Empty;
+        }
+    }
+
+    private string GetStatusText(FaultStatus status)
+    {
+        switch (status)
+        {
+            case FaultStatus.ROOTFAULT:
+                return "Gyökér hiba";
+            case FaultStatus.FAULT:
+                return "Mért hiba";
+            case FaultStatus.CONSEQUENCE:
+                return "Következmény";
+            default:
+                return "Elérhető";
         }
     }
 
