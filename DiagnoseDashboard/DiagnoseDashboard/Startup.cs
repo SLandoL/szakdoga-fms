@@ -47,6 +47,7 @@ namespace DiagnoseDashboard
             services.AddScoped<DiagnoseDashboardService>();
             services.AddScoped<DashboardViewModel>();
             services.AddScoped<FaultSearch>();
+            services.AddScoped<RootCauseAnalyzer>();
             services.AddBlazoredToast();
 
             services.AddCors(policy =>

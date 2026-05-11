@@ -7,264 +7,118 @@
 @inject IStringLocalizer<App> Localizer
 
 <body class="py-0" style="background-color: transparent">
-    <svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
-        <symbol id="exclamation-triangle-fill" fill="currentColor" viewBox="0 0 16 16">
-            <path d="M8.982 1.566a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767L8.982 1.566zM8 5c.535 0 .954.462.9.995l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 5.995A.905.905 0 0 1 8 5zm.002 6a1 1 0 1 1 0 2 1 1 0 0 1 0-2z" />
-        </symbol>
-    </svg>
     <div class="container_dash mr-0 mt-0 pt-0">
         <div class="header1_dash justify-content-center">@Localizer["Gyártósor"]</div>
         <div class="header2_dash justify-content-center">@Localizer["Áramellátás"]</div>
+
         <div class="content1_dash">
-            @if (faultSearch.faultDatas.First(item => item.Name == FaultSearch.GyarSzalagSzenz.Name).FaultStatus == FaultStatus.WORKING)
+            @foreach (FaultButton button in ProductionFaults)
             {
-                <button type="button" class="button_dash1 m-2">@Localizer["Szalag szenzorok"]</button>
-            }
-            else if (faultSearch.faultDatas.FirstOrDefault(item => item.Name == FaultSearch.GyarSzalagSzenz.Name).FaultStatus == FaultStatus.FAULT)
-            {
-                <button type="button" class="button_fault m-2">@Localizer["Szalag szenzorok"]</button>
-            }
-            else if (faultSearch.faultDatas.FirstOrDefault(item => item.Name == FaultSearch.GyarSzalagSzenz.Name).FaultStatus == FaultStatus.ROOTFAULT)
-            {
-                <button type="button" class="button_rootfault m-2"><i class="fa-solid fa-triangle-exclamation fa-beat" style="--fa-beat-scale: 1.5;"></i>@Localizer["Szalag szenzorok"]</button>
-            }
-
-            @if (faultSearch.faultDatas.FirstOrDefault(item => item.Name == FaultSearch.GyarTartalySzenz.Name).FaultStatus == FaultStatus.WORKING)
-            {
-                <button type="button" class="button_dash1 m-2">@Localizer["Tartály szenzorok"]</button>
-            }
-            else if (faultSearch.faultDatas.FirstOrDefault(item => item.Name == FaultSearch.GyarTartalySzenz.Name).FaultStatus == FaultStatus.FAULT)
-            {
-                <button type="button" class="button_fault m-2">@Localizer["Tartály szenzorok"]</button>
-            }
-            else if (faultSearch.faultDatas.FirstOrDefault(item => item.Name == FaultSearch.GyarTartalySzenz.Name).FaultStatus == FaultStatus.ROOTFAULT)
-            {
-                <button type="button" class="button_rootfault m-2"><i class="fa-solid fa-triangle-exclamation fa-beat" style="--fa-beat-scale: 1.5;"></i>@Localizer["Tartály szenzorok"]</button>
-            }
-
-            @if (faultSearch.faultDatas.FirstOrDefault(item => item.Name == FaultSearch.GyarTargoncaSzenz.Name).FaultStatus == FaultStatus.WORKING)
-            {
-                <button type="button" class="button_dash1 m-2">@Localizer["Kocsi szenzork"]</button>
-            }
-            else if (faultSearch.faultDatas.FirstOrDefault(item => item.Name == FaultSearch.GyarTargoncaSzenz.Name).FaultStatus == FaultStatus.FAULT)
-            {
-                <button type="button" class="button_fault m-2">@Localizer["Kocsi szenzork"]</button>
-            }
-            else if (faultSearch.faultDatas.FirstOrDefault(item => item.Name == FaultSearch.GyarTargoncaSzenz.Name).FaultStatus == FaultStatus.ROOTFAULT)
-            {
-                <button type="button" class="button_rootfault m-2"><i class="fa-solid fa-triangle-exclamation fa-beat" style="--fa-beat-scale: 1.5;"></i>@Localizer["Kocsi szenzork"]</button>
-            }
-
-            @if (faultSearch.faultDatas.FirstOrDefault(item => item.Name == FaultSearch.GyarRfidOlv.Name).FaultStatus == FaultStatus.WORKING)
-            {
-                <button type="button" class="button_dash1 m-2">@Localizer["RFID olvasó"]</button>
-            }
-            else if (faultSearch.faultDatas.FirstOrDefault(item => item.Name == FaultSearch.GyarRfidOlv.Name).FaultStatus == FaultStatus.FAULT)
-            {
-                <button type="button" class="button_fault m-2">@Localizer["RFID olvasó"]</button>
-            }
-            else if (faultSearch.faultDatas.FirstOrDefault(item => item.Name == FaultSearch.GyarRfidOlv.Name).FaultStatus == FaultStatus.ROOTFAULT)
-            {
-                <button type="button" class="button_rootfault m-2"><i class="fa-solid fa-triangle-exclamation fa-beat" style="--fa-beat-scale: 1.5;"></i>@Localizer["RFID olvasó"]</button>
+                @RenderFaultButton(button)
             }
         </div>
+
         <div class="content2_dash">
-            @if (faultSearch.faultDatas.FirstOrDefault(item => item.Name == FaultSearch.AramKommKozpont.Name).FaultStatus == FaultStatus.WORKING)
+            @foreach (FaultButton button in PowerFaults)
             {
-                <button type="button" class="button_dash1 m-2">@Localizer["Kommunikációs központ"]</button>
+                @RenderFaultButton(button)
             }
-            else if (faultSearch.faultDatas.FirstOrDefault(item => item.Name == FaultSearch.AramKommKozpont.Name).FaultStatus == FaultStatus.FAULT)
-            {
-                <button type="button" class="button_fault m-2">@Localizer["Kommunikációs központ"]</button>
-            }
-            else if (faultSearch.faultDatas.FirstOrDefault(item => item.Name == FaultSearch.AramKommKozpont.Name).FaultStatus == FaultStatus.ROOTFAULT)
-            {
-                <button type="button" class="button_rootfault m-2"><i class="fa-solid fa-triangle-exclamation fa-beat" style="--fa-beat-scale: 1.5;"></i>@Localizer["Kommunikációs központ"]</button>
-            }
-
-            @if (faultSearch.faultDatas.FirstOrDefault(item => item.Name == FaultSearch.AramTartaly.Name).FaultStatus == FaultStatus.WORKING)
-            {
-                <button type="button" class="button_dash1 m-2">@Localizer["Tartály"]</button>
-            }
-            else if (faultSearch.faultDatas.FirstOrDefault(item => item.Name == FaultSearch.AramTartaly.Name).FaultStatus == FaultStatus.FAULT)
-            {
-                <button type="button" class="button_fault m-2">@Localizer["Tartály"]</button>
-            }
-            else if (faultSearch.faultDatas.FirstOrDefault(item => item.Name == FaultSearch.AramTartaly.Name).FaultStatus == FaultStatus.ROOTFAULT)
-            {
-                <button type="button" class="button_rootfault m-2"><i class="fa-solid fa-triangle-exclamation fa-beat" style="--fa-beat-scale: 1.5;"></i>@Localizer["Tartály"]</button>
-            }
-
-            @if (faultSearch.faultDatas.FirstOrDefault(item => item.Name == FaultSearch.AramKocsi.Name).FaultStatus == FaultStatus.WORKING)
-            {
-                <button type="button" class="button_dash1 m-2">@Localizer["AVG Kocsi"]</button>
-            }
-            else if (faultSearch.faultDatas.FirstOrDefault(item => item.Name == FaultSearch.AramKocsi.Name).FaultStatus == FaultStatus.FAULT)
-            {
-                <button type="button" class="button_fault m-2">@Localizer["AVG Kocsi"]</button>
-            }
-            else if (faultSearch.faultDatas.FirstOrDefault(item => item.Name == FaultSearch.AramKocsi.Name).FaultStatus == FaultStatus.ROOTFAULT)
-            {
-                <button type="button" class="button_rootfault m-2"><i class="fa-solid fa-triangle-exclamation fa-beat" style="--fa-beat-scale: 1.5;"></i>@Localizer["AVG Kocsi"]</button>
-            }
-            @if (faultSearch.faultDatas.FirstOrDefault(item => item.Name == FaultSearch.AramRendszer.Name).FaultStatus == FaultStatus.WORKING)
-            {
-                <button type="button" class="button_dash1 m-2">@Localizer["Rendszer"]</button>
-            }
-            else if (faultSearch.faultDatas.FirstOrDefault(item => item.Name == FaultSearch.AramRendszer.Name).FaultStatus == FaultStatus.FAULT)
-            {
-                <button type="button" class="button_fault m-2">@Localizer["Rendszer"]</button>
-            }
-            else if (faultSearch.faultDatas.FirstOrDefault(item => item.Name == FaultSearch.AramRendszer.Name).FaultStatus == FaultStatus.ROOTFAULT)
-            {
-                <button type="button" class="button_rootfault m-2"><i class="fa-solid fa-triangle-exclamation fa-beat" style="--fa-beat-scale: 1.5;"></i> @Localizer["Rendszer"]</button>
-            }
-
-
         </div>
+
         <div class="header3_dash justify-content-center">@Localizer["Kommunikáció"]</div>
+
         <div class="content3_dash mb-2">
-            @if (faultSearch.faultDatas.FirstOrDefault(item => item.Name == FaultSearch.KommKozpont.Name).FaultStatus == FaultStatus.WORKING)
+            @foreach (FaultButton button in CommunicationFaults)
             {
-                <button type="button" class="button_dash1 m-2">@Localizer["Kommunikációs központ"]</button>
-            }
-            else if (faultSearch.faultDatas.FirstOrDefault(item => item.Name == FaultSearch.KommKozpont.Name).FaultStatus == FaultStatus.FAULT)
-            {
-                <button type="button" class="button_fault m-2">@Localizer["Kommunikációs központ"]</button>
-            }
-            else if (faultSearch.faultDatas.FirstOrDefault(item => item.Name == FaultSearch.KommKozpont.Name).FaultStatus == FaultStatus.ROOTFAULT)
-            {
-                <button type="button" class="button_rootfault m-2"><i class="fa-solid fa-triangle-exclamation fa-beat" style="--fa-beat-scale: 1.5;"></i>@Localizer["Kommunikációs központ"]</button>
-            }
-
-            @if (faultSearch.faultDatas.FirstOrDefault(item => item.Name == FaultSearch.KommKozpontUp.Name).FaultStatus == FaultStatus.WORKING)
-            {
-                <button type="button" class="button_dash1 m-2">@Localizer["Kommunikációs központ elérhető"]</button>
-            }
-            else if (faultSearch.faultDatas.FirstOrDefault(item => item.Name == FaultSearch.KommKozpontUp.Name).FaultStatus == FaultStatus.FAULT)
-            {
-                <button type="button" class="button_fault m-2">@Localizer["Kommunikációs központ elérhető"]</button>
-            }
-            else if (faultSearch.faultDatas.FirstOrDefault(item => item.Name == FaultSearch.KommKozpontUp.Name).FaultStatus == FaultStatus.ROOTFAULT)
-            {
-                <button type="button" class="button_rootfault m-2"><i class="fa-solid fa-triangle-exclamation fa-beat" style="--fa-beat-scale: 1.5;"></i>@Localizer["Kommunikációs központ elérhető"]</button>
-            }
-
-            @if (faultSearch.faultDatas.FirstOrDefault(item => item.Name == FaultSearch.KommKocsiEsp.Name).FaultStatus == FaultStatus.WORKING)
-            {
-                <button type="button" class="button_dash1 m-2">@Localizer["Kocsi üvegek esp"]</button>
-            }
-            else if (faultSearch.faultDatas.FirstOrDefault(item => item.Name == FaultSearch.KommKocsiEsp.Name).FaultStatus == FaultStatus.FAULT)
-            {
-                <button type="button" class="button_fault m-2">@Localizer["Kocsi üvegek esp"]</button>
-            }
-            else if (faultSearch.faultDatas.FirstOrDefault(item => item.Name == FaultSearch.KommKocsiEsp.Name).FaultStatus == FaultStatus.ROOTFAULT)
-            {
-                <button type="button" class="button_rootfault m-2"><i class="fa-solid fa-triangle-exclamation fa-fade"></i>@Localizer["Kocsi üvegek esp"]</button>
-            }
-
-            @if (faultSearch.faultDatas.FirstOrDefault(item => item.Name == FaultSearch.KommTartaly.Name).FaultStatus == FaultStatus.WORKING)
-            {
-                <button type="button" class="button_dash1 m-2">@Localizer["Tartály esp"]</button>
-            }
-            else if (faultSearch.faultDatas.FirstOrDefault(item => item.Name == FaultSearch.KommTartaly.Name).FaultStatus == FaultStatus.FAULT)
-            {
-                <button type="button" class="button_fault m-2">@Localizer["Tartály esp"]</button>
-            }
-            else if (faultSearch.faultDatas.FirstOrDefault(item => item.Name == FaultSearch.KommTartaly.Name).FaultStatus == FaultStatus.ROOTFAULT)
-            {
-                <button type="button" class="button_rootfault m-2"><i class="fa-solid fa-triangle-exclamation fa-beat" style="--fa-beat-scale: 1.5;"></i>@Localizer["Tartály esp"]</button>
-            }
-
-            @if (faultSearch.faultDatas.FirstOrDefault(item => item.Name == FaultSearch.KommKocsi.Name).FaultStatus == FaultStatus.WORKING)
-            {
-                <button type="button" class="button_dash1 m-2">@Localizer["Kocsi elérhető"]</button>
-            }
-            else if (faultSearch.faultDatas.FirstOrDefault(item => item.Name == FaultSearch.KommKocsi.Name).FaultStatus == FaultStatus.FAULT)
-            {
-                <button type="button" class="button_fault m-2">@Localizer["Kocsi elérhető"]</button>
-            }
-            else if (faultSearch.faultDatas.FirstOrDefault(item => item.Name == FaultSearch.KommKocsi.Name).FaultStatus == FaultStatus.ROOTFAULT)
-            {
-                <button type="button" class="button_rootfault m-2"><i class="fa-solid fa-triangle-exclamation fa-fade"></i>@Localizer["Kocsi elérhető"]</button>
-            }
-
-            @if (faultSearch.faultDatas.FirstOrDefault(item => item.Name == FaultSearch.KommRfidUp.Name).FaultStatus == FaultStatus.WORKING)
-            {
-                <button type="button" class="button_dash1 m-2">@Localizer["Raktár RFID elérhető"]</button>
-            }
-            else if (faultSearch.faultDatas.FirstOrDefault(item => item.Name == FaultSearch.KommRfidUp.Name).FaultStatus == FaultStatus.FAULT)
-            {
-                <button type="button" class="button_fault m-2">@Localizer["Raktár RFID elérhető"]</button>
-            }
-            else if (faultSearch.faultDatas.FirstOrDefault(item => item.Name == FaultSearch.KommRfidUp.Name).FaultStatus == FaultStatus.ROOTFAULT)
-            {
-                <button type="button" class="button_rootfault m-2"><i class="fa-solid fa-triangle-exclamation fa-beat" style="--fa-beat-scale: 1.5;"></i>@Localizer["Raktár RFID elérhető"]</button>
-            }
-
-            @if (faultSearch.faultDatas.FirstOrDefault(item => item.Name == FaultSearch.KommKommArammero.Name).FaultStatus == FaultStatus.WORKING)
-            {
-                <button type="button" class="button_dash1 m-2">@Localizer["Komm. központ árammérő elérhető"]</button>
-            }
-            else if (faultSearch.faultDatas.FirstOrDefault(item => item.Name == FaultSearch.KommKommArammero.Name).FaultStatus == FaultStatus.FAULT)
-            {
-                <button type="button" class="button_fault m-2">@Localizer["Komm. központ árammérő elérhető"]</button>
-            }
-            else if (faultSearch.faultDatas.FirstOrDefault(item => item.Name == FaultSearch.KommKommArammero.Name).FaultStatus == FaultStatus.ROOTFAULT)
-            {
-                <button type="button" class="button_rootfault m-2"><i class="fa-solid fa-triangle-exclamation fa-beat" style="--fa-beat-scale: 1.5;"></i>@Localizer["Komm. központ árammérő elérhető"]</button>
-            }
-
-            @if (faultSearch.faultDatas.FirstOrDefault(item => item.Name == FaultSearch.KommTartalyArammero.Name).FaultStatus == FaultStatus.WORKING)
-            {
-                <button type="button" class="button_dash1 m-2">@Localizer["Tartály árammérő elérhető"]</button>
-            }
-            else if (faultSearch.faultDatas.FirstOrDefault(item => item.Name == FaultSearch.KommTartalyArammero.Name).FaultStatus == FaultStatus.FAULT)
-            {
-                <button type="button" class="button_fault m-2">@Localizer["Tartály árammérő elérhető"]</button>
-            }
-            else if (faultSearch.faultDatas.FirstOrDefault(item => item.Name == FaultSearch.KommTartalyArammero.Name).FaultStatus == FaultStatus.ROOTFAULT)
-            {
-                <button type="button" class="button_rootfault m-2"><i class="fa-solid fa-triangle-exclamation fa-beat" style="--fa-beat-scale: 1.5;"></i>@Localizer["Tartály árammérő elérhető"]</button>
-            }
-
-            @if (faultSearch.faultDatas.FirstOrDefault(item => item.Name == FaultSearch.KommTargoncaArammero.Name).FaultStatus == FaultStatus.WORKING)
-            {
-                <button type="button" class="button_dash1 m-2">@Localizer["Kocsi árammérő elérhetősége"]</button>
-            }
-            else if (faultSearch.faultDatas.FirstOrDefault(item => item.Name == FaultSearch.KommTargoncaArammero.Name).FaultStatus == FaultStatus.FAULT)
-            {
-                <button type="button" class="button_fault m-2">@Localizer["Kocsi árammérő elérhetősége"]</button>
-            }
-            else if (faultSearch.faultDatas.FirstOrDefault(item => item.Name == FaultSearch.KommTargoncaArammero.Name).FaultStatus == FaultStatus.ROOTFAULT)
-            {
-                <button type="button" class="button_rootfault m-2"><i class="fa-solid fa-triangle-exclamation fa-beat" style="--fa-beat-scale: 1.5;"></i>@Localizer["Kocsi árammérő elérhetősége"]</button>
-            }
-
-            @if (faultSearch.faultDatas.FirstOrDefault(item => item.Name == FaultSearch.KommRendszer.Name).FaultStatus == FaultStatus.WORKING)
-            {
-                <button type="button" class="button_dash1 m-2">@Localizer["Rendszer kommunikáció"]</button>
-            }
-            else if (faultSearch.faultDatas.FirstOrDefault(item => item.Name == FaultSearch.KommRendszer.Name).FaultStatus == FaultStatus.FAULT)
-            {
-                <button type="button" class="button_fault m-2">@Localizer["Rendszer kommunikáció"]</button>
-            }
-            else if (faultSearch.faultDatas.FirstOrDefault(item => item.Name == FaultSearch.KommRendszer.Name).FaultStatus == FaultStatus.ROOTFAULT)
-            {
-                <button type="button" class="button_rootfault m-2"><i class="fa-solid fa-triangle-exclamation fa-beat" style="--fa-beat-scale: 1.5;"></i>@Localizer["Rendszer kommunikáció"]ó</button>
+                @RenderFaultButton(button)
             }
         </div>
+
         <div class="footer_1 pb-1">
-            <p class="work_icon pb-0 m-0"><i class="fa-solid fa-square design_work"></i> @Localizer["Elérhető"]</p>
-            <p class="dont_work_icon m-0"><i class="fa-solid fa-square"></i> @Localizer["Nem elérhető"]</p>
-            <p class="fault_icon m-0"><i class="fa-solid fa-square"></i> @Localizer["Hiba"]</p>
-            <p class="rootfault_icon m-0"><i class="fa-solid fa-triangle-exclamation"></i> @Localizer["Gyökér hiba"]</p>
+            <p class="work_icon pb-0 m-0">■ @Localizer["Elérhető"]</p>
+            <p class="fault_icon m-0">■ @Localizer["Mért hiba"]</p>
+            <p class="consequence_icon m-0">■ @Localizer["Következmény"]</p>
+            <p class="rootfault_icon m-0">▲ @Localizer["Gyökér hiba"]</p>
         </div>
     </div>
 </body>
 
-
 @code {
+    private readonly List<FaultButton> ProductionFaults = new List<FaultButton>
+    {
+        new FaultButton(FaultSearch.GyarSzalagSzenz.Name, "Szalag szenzorok"),
+        new FaultButton(FaultSearch.GyarTartalySzenz.Name, "Tartály szenzorok"),
+        new FaultButton(FaultSearch.GyarTargoncaSzenz.Name, "Kocsi szenzorok"),
+        new FaultButton(FaultSearch.GyarRfidOlv.Name, "RFID olvasó")
+    };
+
+    private readonly List<FaultButton> PowerFaults = new List<FaultButton>
+    {
+        new FaultButton(FaultSearch.AramKommKozpont.Name, "Kommunikációs központ"),
+        new FaultButton(FaultSearch.AramTartaly.Name, "Tartály"),
+        new FaultButton(FaultSearch.AramKocsi.Name, "AVG Kocsi"),
+        new FaultButton(FaultSearch.AramRendszer.Name, "Rendszer")
+    };
+
+    private readonly List<FaultButton> CommunicationFaults = new List<FaultButton>
+    {
+        new FaultButton(FaultSearch.KommKozpont.Name, "Kommunikációs központ"),
+        new FaultButton(FaultSearch.KommKozpontUp.Name, "Kommunikációs központ elérhető"),
+        new FaultButton(FaultSearch.KommKocsiEsp.Name, "Kocsi üvegek esp"),
+        new FaultButton(FaultSearch.KommTartaly.Name, "Tartály esp"),
+        new FaultButton(FaultSearch.KommKocsi.Name, "Kocsi elérhető"),
+        new FaultButton(FaultSearch.KommRfidUp.Name, "Raktár RFID elérhető"),
+        new FaultButton(FaultSearch.KommKommArammero.Name, "Komm. központ árammérő elérhető"),
+        new FaultButton(FaultSearch.KommTartalyArammero.Name, "Tartály árammérő elérhető"),
+        new FaultButton(FaultSearch.KommTargoncaArammero.Name, "Kocsi árammérő elérhetősége"),
+        new FaultButton(FaultSearch.KommRendszer.Name, "Rendszer kommunikáció")
+    };
+
+    private RenderFragment RenderFaultButton(FaultButton button) => builder =>
+    {
+        FaultStatus status = GetFaultStatus(button.FaultName);
+        builder.OpenElement(0, "button");
+        builder.AddAttribute(1, "type", "button");
+        builder.AddAttribute(2, "class", GetButtonClass(status) + " m-2");
+        builder.AddContent(3, GetStatusPrefix(status));
+        builder.AddContent(4, Localizer[button.DisplayName]);
+        builder.CloseElement();
+    };
+
+    private FaultStatus GetFaultStatus(string faultName)
+    {
+        FaultData fault = faultSearch.faultDatas.FirstOrDefault(item => item.Name == faultName);
+        return fault?.FaultStatus ?? FaultStatus.WORKING;
+    }
+
+    private string GetButtonClass(FaultStatus status)
+    {
+        switch (status)
+        {
+            case FaultStatus.ROOTFAULT:
+                return "button_rootfault";
+            case FaultStatus.FAULT:
+                return "button_fault";
+            case FaultStatus.CONSEQUENCE:
+                return "button_consequence";
+            default:
+                return "button_dash1";
+        }
+    }
+
+    private string GetStatusPrefix(FaultStatus status)
+    {
+        switch (status)
+        {
+            case FaultStatus.ROOTFAULT:
+                return "▲ ";
+            case FaultStatus.CONSEQUENCE:
+                return "↳ ";
+            default:
+                return string.Empty;
+        }
+    }
+
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         try
@@ -273,7 +127,6 @@
             {
                 await Task.Delay(1000);
                 await dashboardVM.GetDiagnoses();
-                faultSearch.RootFaultDetect(faultSearch.RootFaultDetectIndex());
                 await dashboardVM.PostLedRed();
                 await InvokeAsync(StateHasChanged);
             });
@@ -282,6 +135,17 @@
         {
             await InvokeAsync(StateHasChanged);
         }
+    }
 
+    private class FaultButton
+    {
+        public string FaultName { get; }
+        public string DisplayName { get; }
+
+        public FaultButton(string faultName, string displayName)
+        {
+            FaultName = faultName;
+            DisplayName = displayName;
+        }
     }
 }

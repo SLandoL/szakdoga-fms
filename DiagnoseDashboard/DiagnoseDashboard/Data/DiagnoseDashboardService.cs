@@ -21,65 +21,53 @@ namespace DiagnoseDashboard.Data
         public ProfileMessages alert = ProfileMessages.NULL;
         public ProfileMessages answer = ProfileMessages.NULL;
         private FaultSearch faultSearch;
-        List<FaultData> decrease = new List<FaultData>();
-        List<FaultData> decreaseParentID = new List<FaultData>();
+        private readonly RootCauseAnalyzer rootCauseAnalyzer;
 
-        public DiagnoseDashboardService(FaultSearch FaultSearch)
+        public DiagnoseDashboardService(FaultSearch FaultSearch, RootCauseAnalyzer RootCauseAnalyzer)
         {
             faultSearch = FaultSearch;
-            decrease = faultSearch.faultDatas.OrderByDescending(x => x.Priority).ToList();
-            decreaseParentID = faultSearch.faultDatas.OrderByDescending(x => x.Priority).ToList();
+            rootCauseAnalyzer = RootCauseAnalyzer;
         }
 
         public async Task GetDiagnosesAsync()
         {
             diagnoses = await dashboardData.GetDiagnoses();
             await DiagnoseAnalyse();
+            RunRootCauseAnalysis();
+        }
+
+        private void RunRootCauseAnalysis()
+        {
+            rootCauseAnalyzer.ResetAnalysisStatuses(faultSearch.faultDatas);
+            rootCauseAnalyzer.PropagateFaults(faultSearch.faultDatas);
+            List<FaultData> rootCauses = rootCauseAnalyzer.DetectRootCauses(faultSearch.faultDatas);
+
+            FaultSearch.Led = rootCauses.Any();
+            Console.WriteLine("LED: " + FaultSearch.Led);
+            Console.WriteLine("Root fault(s): " + string.Join(", ", rootCauses.Select(fault => fault.Name)));
+        }
+
+        private void ResetFaultStatuses()
+        {
+            foreach (FaultData fault in faultSearch.faultDatas)
+            {
+                fault.FaultStatus = FaultStatus.WORKING;
+            }
+        }
+
+        private bool IsOnlineState(string state)
+        {
+            return string.Equals(state?.Trim(), "ONLINE", StringComparison.OrdinalIgnoreCase);
         }
 
         public async Task TreeSearchW(string fault)
         {
-            await Task.Run(async () =>
+            await Task.Run(() =>
             {
-                faultSearch.faultDatas.FirstOrDefault(item => item.Name == fault).FaultStatus = FaultStatus.WORKING;
-                var diagnosesTemp = await dashboardData.GetDiagnoses();
-                foreach (var getParentId in decrease)
+                FaultData faultData = faultSearch.faultDatas.FirstOrDefault(item => item.Name == fault);
+                if (faultData != null)
                 {
-                    List<FaultData> child = new List<FaultData>();
-                    foreach (var ownId in decreaseParentID)
-                    {
-                        if (ownId.ParentId == (int)getParentId.Priority)
-                        {
-                            child.Add(ownId);
-                        }
-                    }
-                    foreach (var item in child)
-                    {
-                        if ((getParentId.FaultStatus == FaultStatus.WORKING) && child != null)
-                        {
-                            foreach (PropertyInfo propTemp in
-                                typeof(Diagnoses)
-                                .GetProperties()
-                                .Where(p => p.PropertyType == typeof(DiagnoseData)))
-                            {
-                                DiagnoseData currentDiagnoseTemp = (DiagnoseData)propTemp.GetValue(diagnosesTemp, null);
-
-                                foreach (PropertyInfo prop in
-                                    typeof(Diagnoses)
-                                    .GetProperties()
-                                    .Where(p => p.PropertyType == typeof(DiagnoseData)))
-                                {
-                                    DiagnoseData currentDiagnose = (DiagnoseData)prop.GetValue(diagnoses, null);
-                                    if (currentDiagnose.Name == item.Name && currentDiagnoseTemp.Name == item.Name && currentDiagnoseTemp.Data == false)
-                                    {
-                                        item.FaultStatus = FaultStatus.WORKING;
-                                        currentDiagnose.Data = false;
-                                        prop.SetValue(diagnoses, currentDiagnose);
-                                    }
-                                }
-                            }
-                        }
-                    }
+                    faultData.FaultStatus = FaultStatus.WORKING;
                 }
             });
         }
@@ -88,38 +76,11 @@ namespace DiagnoseDashboard.Data
         {
             await Task.Run(() =>
             {
-                faultSearch.faultDatas.FirstOrDefault(item => item.Name == fault).FaultStatus = FaultStatus.FAULT;
-                Console.WriteLine(faultSearch.faultDatas.FirstOrDefault(item => item.Name == fault).Name + "ELEJÉN ÁTÁLÍTVA FAULTARA");
-                foreach (var getParentId in decrease)
+                FaultData faultData = faultSearch.faultDatas.FirstOrDefault(item => item.Name == fault);
+                if (faultData != null)
                 {
-                    List<FaultData> child = new List<FaultData>();
-                    foreach (var ownId in decreaseParentID)
-                    {
-                        if (ownId.ParentId == (int)getParentId.Priority)
-                        {
-                            child.Add(ownId);
-                        }
-                    }
-                    foreach (var item in child)
-                    {
-                        if ((getParentId.FaultStatus == FaultStatus.FAULT || getParentId.FaultStatus == FaultStatus.ROOTFAULT) && child != null)
-                        {
-                            item.FaultStatus = FaultStatus.FAULT;
-
-                            foreach (PropertyInfo prop in
-                                typeof(Diagnoses)
-                                .GetProperties()
-                                .Where(p => p.PropertyType == typeof(DiagnoseData)))
-                            {
-                                DiagnoseData currentDiagnose = (DiagnoseData)prop.GetValue(diagnoses, null);
-                                if (currentDiagnose.Name == item.Name)
-                                {
-                                    currentDiagnose.Data = true;
-                                    prop.SetValue(diagnoses, currentDiagnose);
-                                }
-                            }
-                        }
-                    }
+                    faultData.FaultStatus = FaultStatus.FAULT;
+                    Console.WriteLine(faultData.Name + " ÁTÁLLÍTVA FAULT ÁLLAPOTRA");
                 }
             });
         }
@@ -127,57 +88,74 @@ namespace DiagnoseDashboard.Data
         public async Task DiagnoseAnalyse()
         {
             bool mqttIsConnected = await GetMqttStatus();
+            ResetFaultStatuses();
 
             // 1. SZINT: RENDSZER KOMMUNIKÁCIÓ ELLENŐRZÉSE
-            // Ha ez hibás, minden más Fault lesz, és itt megállunk.
             if (diagnoses.KommRendszer.Data)
             {
                 await TreeSearchF(FaultSearch.KommRendszer.Name);
-                return; // Kilépünk, nem vizsgáljuk tovább
-            }
-            else
-            {
-                await TreeSearchW(FaultSearch.KommRendszer.Name);
+                return;
             }
 
             // 2. SZINT: KOMMUNIKÁCIÓS KÖZPONT
-            // Ha nincs MQTT vagy a központ hibát jelez
-            if (!mqttIsConnected || diagnoses.KommKozpont.Data || diagnoses.KommKozpontUp.Data)
+            // Az MQTT elérhetetlensége magasabb szintű központi kommunikációs hibára képződik.
+            if (!mqttIsConnected || diagnoses.KommKozpont.Data)
             {
                 await TreeSearchF(FaultSearch.KommKozpont.Name);
-                // TreeSearchF kaszkádolja a hibát az összes Level 3 (Eszköz) elemre, mivel azok szülője (29) ez.
-                return; // Kilépünk
+                return;
             }
-            else
+
+            // A KommKozpontUp önálló diagnosztikai jelként kezelhető, ha maga az MQTT státusz
+            // és a központ általános kommunikációs állapota nem hibás.
+            if (diagnoses.KommKozpontUp.Data)
             {
-                await TreeSearchW(FaultSearch.KommKozpont.Name);
-                await TreeSearchW(FaultSearch.KommKozpontUp.Name);
+                await TreeSearchF(FaultSearch.KommKozpontUp.Name);
+                return;
             }
 
             // 3. SZINT: PÁRHUZAMOS ESZKÖZ ELLENŐRZÉSEK
             // Ide csak akkor jutunk, ha a Rendszer és a Központ rendben van.
 
             // --- A) KOCSI (CAR) ---
+            // A kocsi alatti ESP csak akkor számít külön mért hibának, ha maga a kocsi online.
+            // Ha a kocsi offline, akkor a gyerek állapota nem megbízható, ezért azt az RCA
+            // CONSEQUENCE-ként származtatja a KommKocsi hibából.
             string carstateTemp = await dashboardData.GetCarState();
-            if (carstateTemp == "ONLINE")
+            bool carOnline = IsOnlineState(carstateTemp);
+            if (carOnline)
             {
-                carstate = carstateTemp;
+                carstate = carstateTemp?.Trim();
                 await TreeSearchW(FaultSearch.KommKocsi.Name);
+
+                string bottleStateTemp = await dashboardData.GetBottlesState();
+                if (IsOnlineState(bottleStateTemp))
+                {
+                    bottleState = bottleStateTemp?.Trim();
+                    await TreeSearchW(FaultSearch.KommKocsiEsp.Name);
+                }
+                else
+                {
+                    bottleState = "OFFLINE";
+                    await TreeSearchF(FaultSearch.KommKocsiEsp.Name);
+                }
             }
             else
             {
                 carstate = "OFFLINE";
+                bottleState = "UNKNOWN";
                 await TreeSearchF(FaultSearch.KommKocsi.Name);
-                // Ez automatikusan hibára teszi a gyerekeket (KocsiEsp, TargoncaSzenz)
             }
 
             // --- B) TARTÁLY (TANK) ---
+            // A tartály alatti hibákat is csak akkor vesszük külön mért hibának, ha maga a
+            // tartálykommunikáció működik. Offline tartálynál ezek következményként jelennek meg.
             string tankStateTemp = await dashboardData.GetTankState();
-            if (tankStateTemp == "ONLINE")
+            bool tankOnline = IsOnlineState(tankStateTemp);
+            if (tankOnline)
             {
-                tankState = tankStateTemp;
+                tankState = tankStateTemp?.Trim();
                 await TreeSearchW(FaultSearch.KommTartaly.Name);
-                // Ha a tartály elérhető, megnézzük a specifikus hibáit (pl. áram)
+
                 if (diagnoses.AramTartaly.Data) await TreeSearchF(FaultSearch.AramTartaly.Name); else await TreeSearchW(FaultSearch.AramTartaly.Name);
                 if (diagnoses.GyarSzalagSzenz.Data) await TreeSearchF(FaultSearch.GyarSzalagSzenz.Name); else await TreeSearchW(FaultSearch.GyarSzalagSzenz.Name);
             }
@@ -185,29 +163,12 @@ namespace DiagnoseDashboard.Data
             {
                 tankState = "OFFLINE";
                 await TreeSearchF(FaultSearch.KommTartaly.Name);
-                // Automatikusan Fault lesz: AramTartaly, GyarSzalagSzenz, stb.
             }
 
-            // --- C) BOTTLE (KOCSI ÜVEGEK) ---
-            // Ez a Kocsi alatt van elvileg, de külön kezeljük az állapotát
-            string bottleStateTemp = await dashboardData.GetBottlesState();
-            if (bottleStateTemp == "ONLINE")
-            {
-                bottleState = bottleStateTemp;
-                await TreeSearchW(FaultSearch.KommKocsiEsp.Name);
-            }
-            else
-            {
-                bottleState = "OFFLINE";
-                // Ha a Kocsi maga elérhető (ONLINE), de az ESP nem, akkor ez hiba.
-                // Ha a Kocsi OFFLINE, akkor ez már úgyis Fault a fenti check miatt.
-                await TreeSearchF(FaultSearch.KommKocsiEsp.Name);
-            }
-
-            // --- D) RFID ---
-            // Két fő hibaforrás: Kommunikáció (Up) és Működés (Olv)
-
-            // 1. Kommunikáció ellenőrzése
+            // --- C) RFID ---
+            // Két fő hibaforrás: kommunikációs hiba és olvasási/rakományegyezési hiba.
+            // A GyarRfidOlv csak akkor mért hiba, ha az RFID kommunikáció működik, de a rakomány nem egyezik.
+            // Ha az RFID olvasók nem elérhetők, a GyarRfidOlv CONSEQUENCE lesz a KommRfidUp alatt.
             if (diagnoses.KommRfidUp.Data)
             {
                 await TreeSearchF(FaultSearch.KommRfidUp.Name);
@@ -215,20 +176,21 @@ namespace DiagnoseDashboard.Data
             else
             {
                 await TreeSearchW(FaultSearch.KommRfidUp.Name);
-            }
 
-            // 2. Működési hiba (Rakomány, Áram, stb.)
-            if (diagnoses.GyarRfidOlv.Data)
-            {
-                await TreeSearchF(FaultSearch.GyarRfidOlv.Name);
-            }
-            else
-            {
-                await TreeSearchW(FaultSearch.GyarRfidOlv.Name);
+                if (diagnoses.GyarRfidOlv.Data)
+                {
+                    await TreeSearchF(FaultSearch.GyarRfidOlv.Name);
+                }
+                else
+                {
+                    await TreeSearchW(FaultSearch.GyarRfidOlv.Name);
+                }
             }
 
             // --- EGYÉB HIBÁK AUTOMATIKUS FRISSÍTÉSE ---
-            // Minden olyan hiba, amit manuálisan nem fedtünk le fentebb
+            // Minden olyan hiba, amit manuálisan nem fedtünk le fentebb. Itt már nincs
+            // hierarchikus terjesztés: csak az adott diagnosztikai bemenet saját állapotát írjuk.
+            // Az offline szülő alatti gyermekeket szándékosan kihagyjuk, hogy az RCA CONSEQUENCE-ként jelölje őket.
             foreach (PropertyInfo prop in
                     typeof(Diagnoses)
                     .GetProperties()
@@ -236,14 +198,7 @@ namespace DiagnoseDashboard.Data
             {
                 DiagnoseData currentDiagnose = (DiagnoseData)prop.GetValue(diagnoses, null);
 
-                // Kihagyjuk azokat, amiket már manuálisan kezeltünk a struktúrában, 
-                // nehogy felülírjuk a hierarchikus logikát.
-                if (currentDiagnose.Name == FaultSearch.KommRendszer.Name ||
-                    currentDiagnose.Name == FaultSearch.KommKozpont.Name ||
-                    currentDiagnose.Name == FaultSearch.KommKocsi.Name ||
-                    currentDiagnose.Name == FaultSearch.KommTartaly.Name ||
-                    currentDiagnose.Name == FaultSearch.KommRfidUp.Name ||
-                    currentDiagnose.Name == FaultSearch.GyarRfidOlv.Name)
+                if (ShouldSkipGenericDiagnose(currentDiagnose.Name, carOnline, tankOnline))
                 {
                     continue;
                 }
@@ -252,27 +207,47 @@ namespace DiagnoseDashboard.Data
                 {
                     await TreeSearchF(currentDiagnose.Name);
                 }
-                else
-                {
-                    // Csak akkor állítjuk vissza Workingre, ha a szülője nem Fault!
-                    // Ezt a TreeSearchW elvileg ellenőrzi (getParentId check), de biztos ami biztos.
-                    await TreeSearchW(currentDiagnose.Name);
-                }
             }
+        }
+
+        private bool ShouldSkipGenericDiagnose(string diagnoseName, bool carOnline, bool tankOnline)
+        {
+            if (diagnoseName == FaultSearch.KommRendszer.Name ||
+                diagnoseName == FaultSearch.KommKozpont.Name ||
+                diagnoseName == FaultSearch.KommKozpontUp.Name ||
+                diagnoseName == FaultSearch.KommKocsi.Name ||
+                diagnoseName == FaultSearch.KommKocsiEsp.Name ||
+                diagnoseName == FaultSearch.KommTartaly.Name ||
+                diagnoseName == FaultSearch.KommRfidUp.Name ||
+                diagnoseName == FaultSearch.GyarRfidOlv.Name)
+            {
+                return true;
+            }
+
+            if (!carOnline &&
+                (diagnoseName == FaultSearch.GyarTargoncaSzenz.Name ||
+                 diagnoseName == FaultSearch.AramKocsi.Name ||
+                 diagnoseName == FaultSearch.KommTargoncaArammero.Name))
+            {
+                return true;
+            }
+
+            if (!tankOnline &&
+                (diagnoseName == FaultSearch.AramTartaly.Name ||
+                 diagnoseName == FaultSearch.GyarSzalagSzenz.Name ||
+                 diagnoseName == FaultSearch.GyarTartalySzenz.Name ||
+                 diagnoseName == FaultSearch.KommTartalyArammero.Name))
+            {
+                return true;
+            }
+
+            return false;
         }
 
         public async Task<bool> GetMqttStatus()
         {
             var status = await dashboardData.GetMqttStatus();
             Console.WriteLine("KOMM STATUS: " + status);
-            if (status)
-            {
-                faultSearch.faultDatas.FirstOrDefault(item => item.Name == FaultSearch.KommKozpont.Name).FaultStatus = FaultStatus.WORKING;
-            }
-            else if (status == false)
-            {
-                faultSearch.faultDatas.FirstOrDefault(item => item.Name == FaultSearch.KommKozpont.Name).FaultStatus = FaultStatus.FAULT;
-            }
             return status;
         }
         public async Task MQTTConnectionAsync()

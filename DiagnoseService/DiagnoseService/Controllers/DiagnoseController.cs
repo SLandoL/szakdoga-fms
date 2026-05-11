@@ -67,25 +67,19 @@ namespace DiagnoseService.Controllers
         [Route("Dashboard/GetCarState")]
         public string GetCarState()
         {
-            string cartemp = MQTTSubscriber.carState;
-            MQTTSubscriber.carState = "OFFLINE";
-            return cartemp;
+            return MQTTSubscriber.GetCarStateSnapshot();
         }
         [HttpGet]
         [Route("Dashboard/GetTankState")]
         public string GetTankState()
         {
-            string tanktemp = MQTTSubscriber.tankState;
-            MQTTSubscriber.tankState = "OFFLINE";
-            return tanktemp;
+            return MQTTSubscriber.GetTankStateSnapshot();
         }
         [HttpGet]
         [Route("Dashboard/GetBottlesState")]
         public string GetBottleState()
         {
-            string bottletemp = MQTTSubscriber.bottleState;
-            MQTTSubscriber.bottleState = "OFFLINE";
-            return bottletemp;
+            return MQTTSubscriber.GetBottleStateSnapshot();
         }
         [HttpPost("IfFailure")]
         public async Task LEDChange(bool value)
