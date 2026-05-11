@@ -54,7 +54,6 @@
     box-sizing: border-box;
 }
 
-
 .header1_dash {
     grid-column-start: 1;
     grid-column-end: 2;
@@ -146,83 +145,73 @@
 .work_icon {
     text-align: center;
     font-size: 30px;
-    color: #adff2f;
+    color: #3f8f00;
 }
 
 .fault_icon {
     text-align: center;
     font-size: 30px;
-    color: #DC143C;
+    color: #b45309;
 }
 
 .consequence_icon {
     text-align: center;
     font-size: 30px;
-    color: #4169E1;
+    color: #1d4ed8;
 }
 
 .rootfault_icon {
     text-align: center;
     font-size: 30px;
-    color: black;
+    color: #b91c1c;
+}
+
+.button_dash1,
+.button_fault,
+.button_consequence,
+.button_rootfault {
+    min-height: 70px;
+    width: auto;
+    border-radius: 30px;
+    font-weight: bold;
+    text-align: center;
+    font-size: 1.5rem;
+    cursor: default !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    padding: 0.4rem 0.6rem;
+    color: #111111;
+    box-sizing: border-box;
+    background-clip: border-box;
+}
+
+.button_dash1:active,
+.button_fault:active,
+.button_consequence:active,
+.button_rootfault:active {
+    outline: none !important;
 }
 
 .button_dash1 {
-    height: auto;
-    width: auto;
-    border-radius: 30px;
-    border: none;
-    font-weight: bold;
-    background-image: linear-gradient(transparent, transparent), linear-gradient(to right, #adff2f, #30d5c8) !important;
-    background-origin: border-box;
-    background-clip: content-box, border-box;
-    text-align: center;
-    font-size: 1.5rem;
-    cursor: default !important;
+    border: 2px solid #3f8f00;
+    background: linear-gradient(to right, #adff2f, #30d5c8) !important;
 }
 
-    .button_dash1:active {
-        border: none !important;
-    }
-
 .button_fault {
-    height: auto;
-    width: auto;
-    border-radius: 30px;
-    border: none;
-    font-weight: bold;
-    background-image: linear-gradient(transparent, transparent), linear-gradient(to right, #FFAA33, #FFFF00 50%) !important;
-    background-origin: border-box;
-    background-clip: content-box, border-box;
-    text-align: center;
-    cursor: default !important;
-    font-size: 1.5rem;
+    border: 2px solid #b45309;
+    background: linear-gradient(to right, #FFAA33, #FFFF00 50%) !important;
 }
 
 .button_consequence {
-    height: auto;
-    width: auto;
-    border-radius: 30px;
-    border: 2px dashed #1E3A8A;
-    font-weight: bold;
-    background-image: linear-gradient(transparent, transparent), linear-gradient(to right, #87CEFA, #B0E0E6 60%) !important;
-    background-origin: border-box;
-    background-clip: content-box, border-box;
-    text-align: center;
-    cursor: default !important;
-    font-size: 1.5rem;
+    border: 3px dashed #1d4ed8;
+    background: linear-gradient(to right, #bfdbfe, #dbeafe 60%) !important;
+    color: #0f172a;
 }
 
 .button_rootfault {
-    height: auto;
-    width: auto;
-    border-radius: 30px;
-    border: black solid;
-    font-weight: bold;
-    background-image: linear-gradient(transparent, transparent), linear-gradient(to right, #DC143C, #FF6347 60%) !important;
-    background-origin: border-box;
-    background-clip: content-box, border-box;
-    text-align: center;
-    font-size: 1.5rem;
-    cursor: default !important;
+    border: 3px solid #111111;
+    background: linear-gradient(to right, #DC143C, #FF6347 60%) !important;
+    color: #111111;
 }
