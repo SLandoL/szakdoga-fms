@@ -38,14 +38,14 @@ A `DiagnoseAnalyse()` most már csak a diagnosztikai ciklus fő lépéseit hívj
 bool mqttIsConnected = await GetMqttStatus();
 ResetFaultStatuses();
 
-if (await AnalyseSystemCommunication()) return;
-if (await AnalyseMqttCenter(mqttIsConnected)) return;
+if (AnalyseSystemCommunication()) return;
+if (AnalyseMqttCenter(mqttIsConnected)) return;
 
 bool carOnline = await AnalyseCar();
 bool tankOnline = await AnalyseTank();
 
-await AnalyseRfid();
-await AnalyseRemainingDiagnoses(carOnline, tankOnline);
+AnalyseRfid();
+AnalyseRemainingDiagnoses(carOnline, tankOnline);
 ```
 
 Ezzel a metódus szerepe világosabb lett: nem részletszabályokat tartalmaz, hanem a teljes diagnosztikai folyamat sorrendjét írja le.
@@ -55,7 +55,7 @@ Ezzel a metódus szerepe világosabb lett: nem részletszabályokat tartalmaz, h
 Új metódus:
 
 ```csharp
-private async Task<bool> AnalyseSystemCommunication()
+private bool AnalyseSystemCommunication()
 ```
 
 Ez a legfelső szintű rendszerkommunikációs hibát kezeli. Ha a `KommRendszer` diagnosztikai jel aktív, akkor a service beállítja a megfelelő `FaultData` elemet `FAULT` állapotra, és a diagnosztikai ciklus ezen a ponton megáll. Ez megőrzi azt a korábbi működést, hogy magasabb szintű kommunikációs hiba esetén az alsóbb szintek nem kerülnek külön mért hibaként értékelésre.
@@ -65,7 +65,7 @@ Ez a legfelső szintű rendszerkommunikációs hibát kezeli. Ha a `KommRendszer
 Új metódus:
 
 ```csharp
-private async Task<bool> AnalyseMqttCenter(bool mqttIsConnected)
+private bool AnalyseMqttCenter(bool mqttIsConnected)
 ```
 
 Ez kezeli az MQTT kapcsolat és a központi kommunikáció állapotát. Ha az MQTT nem elérhető, vagy a `KommKozpont` diagnosztikai jel aktív, akkor a `KommKozpont` lesz mért hiba. Ha ezek rendben vannak, de a `KommKozpontUp` aktív, akkor az önálló diagnosztikai jelként jelenik meg.
@@ -109,7 +109,7 @@ Ez lekéri a tartály állapotát, majd online tartály mellett kezeli a tartál
 Új metódus:
 
 ```csharp
-private async Task AnalyseRfid()
+private void AnalyseRfid()
 ```
 
 Ez kezeli az RFID kommunikációs és RFID olvasási/rakományegyezési hibák elkülönítését. A működés nem változott az előző szakaszhoz képest:
@@ -123,12 +123,26 @@ Ez kezeli az RFID kommunikációs és RFID olvasási/rakományegyezési hibák e
 Új metódus:
 
 ```csharp
-private async Task AnalyseRemainingDiagnoses(bool carOnline, bool tankOnline)
+private void AnalyseRemainingDiagnoses(bool carOnline, bool tankOnline)
 ```
 
 Ez tartalmazza a korábbi reflektív feldolgozást. A metódus végigmegy a `Diagnoses` osztály `DiagnoseData` típusú property-jein, és azokat a hibákat állítja `FAULT` állapotba, amelyeket nem kezeltek korábban explicit módon.
 
 A `ShouldSkipGenericDiagnose(...)` továbbra is megakadályozza, hogy a már kezelt magasabb szintű hibák, illetve offline szülő alatti gyermekhibák újra mért hibaként kerüljenek feldolgozásra.
+
+### 9. Hibaállapot-beállító segédfüggvények tisztítása
+
+A review után a korábbi félrevezető `TreeSearchF` és `TreeSearchW` metódusok kivezetésre kerültek. Ezek valójában nem fában kerestek, hanem egy konkrét `FaultData` állapotát állították.
+
+A helyükre egy közös állapotbeállító metódus és két olvasható wrapper került:
+
+```csharp
+private void SetFaultStatus(string faultName, FaultStatus status)
+private void MarkFault(string faultName)
+private void MarkWorking(string faultName)
+```
+
+Ezzel együtt a felesleges `Task.Run` használat is megszűnt. Ez azért jobb, mert ezek a műveletek csak memóriában lévő objektummezőket állítanak, nem végeznek blokkoló I/O műveletet. A módosítás nem változtatja meg a diagnosztikai szabályokat, csak pontosabb neveket és egyszerűbb végrehajtást ad.
 
 ## Miért jobb ez a megoldás?
 
@@ -146,11 +160,13 @@ Ez szakdolgozati szempontból azért fontos, mert a service így már nem egy na
 
 A továbbfejlesztés során a `DiagnoseDashboardService` belső diagnosztikai folyamata kisebb, célzott metódusokra lett bontva. A service ezzel koordinátorszerepbe került: lekéri a diagnosztikai és eszközállapot-adatokat, frissíti a mért `FaultData` állapotokat, majd meghívja a külön `RootCauseAnalyzer` modult. A felhasználói felület továbbra sem végez gyökérhiba-számítást, hanem csak a service által előállított állapotot jeleníti meg.
 
+A refaktor második, kisebb tisztító lépéseként a korábbi, félrevezető nevű `TreeSearchF` és `TreeSearchW` segédfüggvények helyett egyértelmű `MarkFault`, `MarkWorking` és `SetFaultStatus` metódusok kerültek bevezetésre. Ez jobban tükrözi a tényleges működést, és csökkenti a kód félreérthetőségét.
+
 ## Korlátok és következő lépések
 
 Ez a szakasz elsősorban szerkezeti refaktor volt. Nem történt adatbázis-migráció, és a diagnosztikai szabályok lényegi működése sem lett újratervezve. A következő logikus fejlesztések:
 
-1. a `TreeSearchF` és `TreeSearchW` metódusok későbbi átnevezése egyértelműbb `SetFaultStatus` jellegű segédfüggvényre,
-2. a tank alatti diagnózisok teljes körű explicit kezelése,
-3. service-szintű unit vagy integrációs tesztek írása,
-4. a dashboard gyökérhiba-összefoglaló panelének kialakítása.
+1. a tank alatti diagnózisok teljes körű explicit kezelése,
+2. service-szintű unit vagy integrációs tesztek írása,
+3. a dashboard gyökérhiba-összefoglaló panelének kialakítása,
+4. a service hosszabb távú bontása külön `DeviceStateAnalyzer` vagy `FaultStatusUpdater` jellegű osztályokra.
