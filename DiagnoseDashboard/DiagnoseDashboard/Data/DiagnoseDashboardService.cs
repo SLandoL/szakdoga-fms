@@ -60,29 +60,30 @@ namespace DiagnoseDashboard.Data
             return string.Equals(state?.Trim(), "ONLINE", StringComparison.OrdinalIgnoreCase);
         }
 
-        public async Task TreeSearchW(string fault)
+        private void SetFaultStatus(string faultName, FaultStatus status)
         {
-            await Task.Run(() =>
+            FaultData faultData = faultSearch.faultDatas.FirstOrDefault(item => item.Name == faultName);
+            if (faultData == null)
             {
-                FaultData faultData = faultSearch.faultDatas.FirstOrDefault(item => item.Name == fault);
-                if (faultData != null)
-                {
-                    faultData.FaultStatus = FaultStatus.WORKING;
-                }
-            });
+                return;
+            }
+
+            faultData.FaultStatus = status;
+
+            if (status == FaultStatus.FAULT)
+            {
+                Console.WriteLine(faultData.Name + " ÁTÁLLÍTVA FAULT ÁLLAPOTRA");
+            }
         }
 
-        public async Task TreeSearchF(string fault)
+        private void MarkWorking(string faultName)
         {
-            await Task.Run(() =>
-            {
-                FaultData faultData = faultSearch.faultDatas.FirstOrDefault(item => item.Name == fault);
-                if (faultData != null)
-                {
-                    faultData.FaultStatus = FaultStatus.FAULT;
-                    Console.WriteLine(faultData.Name + " ÁTÁLLÍTVA FAULT ÁLLAPOTRA");
-                }
-            });
+            SetFaultStatus(faultName, FaultStatus.WORKING);
+        }
+
+        private void MarkFault(string faultName)
+        {
+            SetFaultStatus(faultName, FaultStatus.FAULT);
         }
 
         public async Task DiagnoseAnalyse()
@@ -90,12 +91,12 @@ namespace DiagnoseDashboard.Data
             bool mqttIsConnected = await GetMqttStatus();
             ResetFaultStatuses();
 
-            if (await AnalyseSystemCommunication())
+            if (AnalyseSystemCommunication())
             {
                 return;
             }
 
-            if (await AnalyseMqttCenter(mqttIsConnected))
+            if (AnalyseMqttCenter(mqttIsConnected))
             {
                 return;
             }
@@ -103,27 +104,27 @@ namespace DiagnoseDashboard.Data
             bool carOnline = await AnalyseCar();
             bool tankOnline = await AnalyseTank();
 
-            await AnalyseRfid();
-            await AnalyseRemainingDiagnoses(carOnline, tankOnline);
+            AnalyseRfid();
+            AnalyseRemainingDiagnoses(carOnline, tankOnline);
         }
 
-        private async Task<bool> AnalyseSystemCommunication()
+        private bool AnalyseSystemCommunication()
         {
             if (!diagnoses.KommRendszer.Data)
             {
                 return false;
             }
 
-            await TreeSearchF(FaultSearch.KommRendszer.Name);
+            MarkFault(FaultSearch.KommRendszer.Name);
             return true;
         }
 
-        private async Task<bool> AnalyseMqttCenter(bool mqttIsConnected)
+        private bool AnalyseMqttCenter(bool mqttIsConnected)
         {
             // Az MQTT elérhetetlensége magasabb szintű központi kommunikációs hibára képződik.
             if (!mqttIsConnected || diagnoses.KommKozpont.Data)
             {
-                await TreeSearchF(FaultSearch.KommKozpont.Name);
+                MarkFault(FaultSearch.KommKozpont.Name);
                 return true;
             }
 
@@ -131,7 +132,7 @@ namespace DiagnoseDashboard.Data
             // és a központ általános kommunikációs állapota nem hibás.
             if (diagnoses.KommKozpontUp.Data)
             {
-                await TreeSearchF(FaultSearch.KommKozpontUp.Name);
+                MarkFault(FaultSearch.KommKozpontUp.Name);
                 return true;
             }
 
@@ -149,14 +150,14 @@ namespace DiagnoseDashboard.Data
             if (carOnline)
             {
                 carstate = carstateTemp?.Trim();
-                await TreeSearchW(FaultSearch.KommKocsi.Name);
+                MarkWorking(FaultSearch.KommKocsi.Name);
                 await AnalyseBottle();
             }
             else
             {
                 carstate = "OFFLINE";
                 bottleState = "UNKNOWN";
-                await TreeSearchF(FaultSearch.KommKocsi.Name);
+                MarkFault(FaultSearch.KommKocsi.Name);
             }
 
             return carOnline;
@@ -168,12 +169,12 @@ namespace DiagnoseDashboard.Data
             if (IsOnlineState(bottleStateTemp))
             {
                 bottleState = bottleStateTemp?.Trim();
-                await TreeSearchW(FaultSearch.KommKocsiEsp.Name);
+                MarkWorking(FaultSearch.KommKocsiEsp.Name);
             }
             else
             {
                 bottleState = "OFFLINE";
-                await TreeSearchF(FaultSearch.KommKocsiEsp.Name);
+                MarkFault(FaultSearch.KommKocsiEsp.Name);
             }
         }
 
@@ -187,44 +188,44 @@ namespace DiagnoseDashboard.Data
             if (tankOnline)
             {
                 tankState = tankStateTemp?.Trim();
-                await TreeSearchW(FaultSearch.KommTartaly.Name);
+                MarkWorking(FaultSearch.KommTartaly.Name);
 
-                if (diagnoses.AramTartaly.Data) await TreeSearchF(FaultSearch.AramTartaly.Name); else await TreeSearchW(FaultSearch.AramTartaly.Name);
-                if (diagnoses.GyarSzalagSzenz.Data) await TreeSearchF(FaultSearch.GyarSzalagSzenz.Name); else await TreeSearchW(FaultSearch.GyarSzalagSzenz.Name);
+                if (diagnoses.AramTartaly.Data) MarkFault(FaultSearch.AramTartaly.Name); else MarkWorking(FaultSearch.AramTartaly.Name);
+                if (diagnoses.GyarSzalagSzenz.Data) MarkFault(FaultSearch.GyarSzalagSzenz.Name); else MarkWorking(FaultSearch.GyarSzalagSzenz.Name);
             }
             else
             {
                 tankState = "OFFLINE";
-                await TreeSearchF(FaultSearch.KommTartaly.Name);
+                MarkFault(FaultSearch.KommTartaly.Name);
             }
 
             return tankOnline;
         }
 
-        private async Task AnalyseRfid()
+        private void AnalyseRfid()
         {
             // Két fő hibaforrás: kommunikációs hiba és olvasási/rakományegyezési hiba.
             // A GyarRfidOlv csak akkor mért hiba, ha az RFID kommunikáció működik, de a rakomány nem egyezik.
             // Ha az RFID olvasók nem elérhetők, a GyarRfidOlv CONSEQUENCE lesz a KommRfidUp alatt.
             if (diagnoses.KommRfidUp.Data)
             {
-                await TreeSearchF(FaultSearch.KommRfidUp.Name);
+                MarkFault(FaultSearch.KommRfidUp.Name);
                 return;
             }
 
-            await TreeSearchW(FaultSearch.KommRfidUp.Name);
+            MarkWorking(FaultSearch.KommRfidUp.Name);
 
             if (diagnoses.GyarRfidOlv.Data)
             {
-                await TreeSearchF(FaultSearch.GyarRfidOlv.Name);
+                MarkFault(FaultSearch.GyarRfidOlv.Name);
             }
             else
             {
-                await TreeSearchW(FaultSearch.GyarRfidOlv.Name);
+                MarkWorking(FaultSearch.GyarRfidOlv.Name);
             }
         }
 
-        private async Task AnalyseRemainingDiagnoses(bool carOnline, bool tankOnline)
+        private void AnalyseRemainingDiagnoses(bool carOnline, bool tankOnline)
         {
             // Minden olyan hiba, amit manuálisan nem fedtünk le fentebb. Itt már nincs
             // hierarchikus terjesztés: csak az adott diagnosztikai bemenet saját állapotát írjuk.
@@ -243,7 +244,7 @@ namespace DiagnoseDashboard.Data
 
                 if (currentDiagnose.Data)
                 {
-                    await TreeSearchF(currentDiagnose.Name);
+                    MarkFault(currentDiagnose.Name);
                 }
             }
         }
@@ -314,7 +315,7 @@ namespace DiagnoseDashboard.Data
                     Console.WriteLine("Nem lehetett csatlakozni");
                     answer = ProfileMessages.MQTTNOTUP;
                     Console.WriteLine("ConnectMQTT No: " + answer);
-                    faultSearch.faultDatas.FirstOrDefault(item => item.Name == FaultSearch.KommKozpont.Name).FaultStatus = FaultStatus.FAULT;
+                    MarkFault(FaultSearch.KommKozpont.Name);
                 }
             }
             else
@@ -324,7 +325,7 @@ namespace DiagnoseDashboard.Data
                 try
                 {
                     await MQTTConnectionAsync();
-                    faultSearch.faultDatas.FirstOrDefault(item => item.Name == FaultSearch.KommKozpont.Name).FaultStatus = FaultStatus.WORKING;
+                    MarkWorking(FaultSearch.KommKozpont.Name);
                 }
                 catch (Exception)
                 {
