@@ -166,6 +166,74 @@
     color: #b91c1c;
 }
 
+.fault_card {
+    min-height: 70px;
+    width: auto;
+    border-radius: 30px;
+    font-weight: bold;
+    text-align: center;
+    font-size: 1.35rem;
+    cursor: default !important;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    padding: 0.4rem 0.6rem;
+    visibility: visible !important;
+    opacity: 1 !important;
+    box-sizing: border-box;
+    overflow: visible;
+    white-space: normal;
+}
+
+.fault_card:active {
+    outline: none !important;
+}
+
+.fault_card_prefix {
+    display: inline-block;
+    min-width: 1.2rem;
+    font-size: 1.3rem;
+    line-height: 1;
+}
+
+.fault_card_text {
+    display: inline-block;
+}
+
+.fault_card_state {
+    display: block;
+    font-size: 0.75rem;
+    line-height: 1;
+    opacity: 0.85;
+    margin-left: 0.2rem;
+}
+
+.fault_card_working {
+    border: 2px solid #3f8f00 !important;
+    background: #adff2f !important;
+    color: #111111 !important;
+}
+
+.fault_card_fault {
+    border: 2px solid #b45309 !important;
+    background: #fbbf24 !important;
+    color: #111111 !important;
+}
+
+.fault_card_consequence {
+    border: 3px dashed #1d4ed8 !important;
+    background: #bfdbfe !important;
+    color: #0f172a !important;
+}
+
+.fault_card_rootfault {
+    border: 3px solid #111111 !important;
+    background: #ef4444 !important;
+    color: #111111 !important;
+}
+
+/* Backward-compatible aliases kept so older dashboard markup cannot disappear if cached/generated markup still uses old class names. */
 .button_dash1,
 .button_fault,
 .button_consequence,
@@ -175,43 +243,37 @@
     border-radius: 30px;
     font-weight: bold;
     text-align: center;
-    font-size: 1.5rem;
+    font-size: 1.35rem;
     cursor: default !important;
-    display: flex;
+    display: flex !important;
     align-items: center;
     justify-content: center;
     gap: 0.35rem;
     padding: 0.4rem 0.6rem;
-    color: #111111;
+    visibility: visible !important;
+    opacity: 1 !important;
     box-sizing: border-box;
-    background-clip: border-box;
-}
-
-.button_dash1:active,
-.button_fault:active,
-.button_consequence:active,
-.button_rootfault:active {
-    outline: none !important;
+    overflow: visible;
+    color: #111111;
 }
 
 .button_dash1 {
-    border: 2px solid #3f8f00;
-    background: linear-gradient(to right, #adff2f, #30d5c8) !important;
+    border: 2px solid #3f8f00 !important;
+    background: #adff2f !important;
 }
 
 .button_fault {
-    border: 2px solid #b45309;
-    background: linear-gradient(to right, #FFAA33, #FFFF00 50%) !important;
+    border: 2px solid #b45309 !important;
+    background: #fbbf24 !important;
 }
 
 .button_consequence {
-    border: 3px dashed #1d4ed8;
-    background: linear-gradient(to right, #bfdbfe, #dbeafe 60%) !important;
-    color: #0f172a;
+    border: 3px dashed #1d4ed8 !important;
+    background: #bfdbfe !important;
+    color: #0f172a !important;
 }
 
 .button_rootfault {
-    border: 3px solid #111111;
-    background: linear-gradient(to right, #DC143C, #FF6347 60%) !important;
-    color: #111111;
+    border: 3px solid #111111 !important;
+    background: #ef4444 !important;
 }
