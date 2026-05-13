@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -60,29 +60,30 @@ namespace DiagnoseDashboard.Data
             return string.Equals(state?.Trim(), "ONLINE", StringComparison.OrdinalIgnoreCase);
         }
 
-        public async Task TreeSearchW(string fault)
+        private void SetFaultStatus(string faultName, FaultStatus status)
         {
-            await Task.Run(() =>
+            FaultData faultData = faultSearch.faultDatas.FirstOrDefault(item => item.Name == faultName);
+            if (faultData == null)
             {
-                FaultData faultData = faultSearch.faultDatas.FirstOrDefault(item => item.Name == fault);
-                if (faultData != null)
-                {
-                    faultData.FaultStatus = FaultStatus.WORKING;
-                }
-            });
+                return;
+            }
+
+            faultData.FaultStatus = status;
+
+            if (status == FaultStatus.FAULT)
+            {
+                Console.WriteLine(faultData.Name + " ÁTÁLLÍTVA FAULT ÁLLAPOTRA");
+            }
         }
 
-        public async Task TreeSearchF(string fault)
+        private void MarkWorking(string faultName)
         {
-            await Task.Run(() =>
-            {
-                FaultData faultData = faultSearch.faultDatas.FirstOrDefault(item => item.Name == fault);
-                if (faultData != null)
-                {
-                    faultData.FaultStatus = FaultStatus.FAULT;
-                    Console.WriteLine(faultData.Name + " ÁTÁLLÍTVA FAULT ÁLLAPOTRA");
-                }
-            });
+            SetFaultStatus(faultName, FaultStatus.WORKING);
+        }
+
+        private void MarkFault(string faultName)
+        {
+            SetFaultStatus(faultName, FaultStatus.FAULT);
         }
 
         public async Task DiagnoseAnalyse()
@@ -90,104 +91,142 @@ namespace DiagnoseDashboard.Data
             bool mqttIsConnected = await GetMqttStatus();
             ResetFaultStatuses();
 
-            // 1. SZINT: RENDSZER KOMMUNIKÁCIÓ ELLENŐRZÉSE
-            if (diagnoses.KommRendszer.Data)
+            if (AnalyseSystemCommunication())
             {
-                await TreeSearchF(FaultSearch.KommRendszer.Name);
                 return;
             }
 
-            // 2. SZINT: KOMMUNIKÁCIÓS KÖZPONT
+            if (AnalyseMqttCenter(mqttIsConnected))
+            {
+                return;
+            }
+
+            bool carOnline = await AnalyseCar();
+            bool tankOnline = await AnalyseTank();
+
+            AnalyseRfid();
+            AnalyseRemainingDiagnoses(carOnline, tankOnline);
+        }
+
+        private bool AnalyseSystemCommunication()
+        {
+            if (!diagnoses.KommRendszer.Data)
+            {
+                return false;
+            }
+
+            MarkFault(FaultSearch.KommRendszer.Name);
+            return true;
+        }
+
+        private bool AnalyseMqttCenter(bool mqttIsConnected)
+        {
             // Az MQTT elérhetetlensége magasabb szintű központi kommunikációs hibára képződik.
             if (!mqttIsConnected || diagnoses.KommKozpont.Data)
             {
-                await TreeSearchF(FaultSearch.KommKozpont.Name);
-                return;
+                MarkFault(FaultSearch.KommKozpont.Name);
+                return true;
             }
 
             // A KommKozpontUp önálló diagnosztikai jelként kezelhető, ha maga az MQTT státusz
             // és a központ általános kommunikációs állapota nem hibás.
             if (diagnoses.KommKozpontUp.Data)
             {
-                await TreeSearchF(FaultSearch.KommKozpontUp.Name);
-                return;
+                MarkFault(FaultSearch.KommKozpontUp.Name);
+                return true;
             }
 
-            // 3. SZINT: PÁRHUZAMOS ESZKÖZ ELLENŐRZÉSEK
-            // Ide csak akkor jutunk, ha a Rendszer és a Központ rendben van.
+            return false;
+        }
 
-            // --- A) KOCSI (CAR) ---
+        private async Task<bool> AnalyseCar()
+        {
             // A kocsi alatti ESP csak akkor számít külön mért hibának, ha maga a kocsi online.
             // Ha a kocsi offline, akkor a gyerek állapota nem megbízható, ezért azt az RCA
             // CONSEQUENCE-ként származtatja a KommKocsi hibából.
             string carstateTemp = await dashboardData.GetCarState();
             bool carOnline = IsOnlineState(carstateTemp);
+
             if (carOnline)
             {
                 carstate = carstateTemp?.Trim();
-                await TreeSearchW(FaultSearch.KommKocsi.Name);
-
-                string bottleStateTemp = await dashboardData.GetBottlesState();
-                if (IsOnlineState(bottleStateTemp))
-                {
-                    bottleState = bottleStateTemp?.Trim();
-                    await TreeSearchW(FaultSearch.KommKocsiEsp.Name);
-                }
-                else
-                {
-                    bottleState = "OFFLINE";
-                    await TreeSearchF(FaultSearch.KommKocsiEsp.Name);
-                }
+                MarkWorking(FaultSearch.KommKocsi.Name);
+                await AnalyseBottle();
             }
             else
             {
                 carstate = "OFFLINE";
                 bottleState = "UNKNOWN";
-                await TreeSearchF(FaultSearch.KommKocsi.Name);
+                MarkFault(FaultSearch.KommKocsi.Name);
             }
 
-            // --- B) TARTÁLY (TANK) ---
+            return carOnline;
+        }
+
+        private async Task AnalyseBottle()
+        {
+            string bottleStateTemp = await dashboardData.GetBottlesState();
+            if (IsOnlineState(bottleStateTemp))
+            {
+                bottleState = bottleStateTemp?.Trim();
+                MarkWorking(FaultSearch.KommKocsiEsp.Name);
+            }
+            else
+            {
+                bottleState = "OFFLINE";
+                MarkFault(FaultSearch.KommKocsiEsp.Name);
+            }
+        }
+
+        private async Task<bool> AnalyseTank()
+        {
             // A tartály alatti hibákat is csak akkor vesszük külön mért hibának, ha maga a
             // tartálykommunikáció működik. Offline tartálynál ezek következményként jelennek meg.
             string tankStateTemp = await dashboardData.GetTankState();
             bool tankOnline = IsOnlineState(tankStateTemp);
+
             if (tankOnline)
             {
                 tankState = tankStateTemp?.Trim();
-                await TreeSearchW(FaultSearch.KommTartaly.Name);
+                MarkWorking(FaultSearch.KommTartaly.Name);
 
-                if (diagnoses.AramTartaly.Data) await TreeSearchF(FaultSearch.AramTartaly.Name); else await TreeSearchW(FaultSearch.AramTartaly.Name);
-                if (diagnoses.GyarSzalagSzenz.Data) await TreeSearchF(FaultSearch.GyarSzalagSzenz.Name); else await TreeSearchW(FaultSearch.GyarSzalagSzenz.Name);
+                if (diagnoses.AramTartaly.Data) MarkFault(FaultSearch.AramTartaly.Name); else MarkWorking(FaultSearch.AramTartaly.Name);
+                if (diagnoses.GyarSzalagSzenz.Data) MarkFault(FaultSearch.GyarSzalagSzenz.Name); else MarkWorking(FaultSearch.GyarSzalagSzenz.Name);
             }
             else
             {
                 tankState = "OFFLINE";
-                await TreeSearchF(FaultSearch.KommTartaly.Name);
+                MarkFault(FaultSearch.KommTartaly.Name);
             }
 
-            // --- C) RFID ---
+            return tankOnline;
+        }
+
+        private void AnalyseRfid()
+        {
             // Két fő hibaforrás: kommunikációs hiba és olvasási/rakományegyezési hiba.
             // A GyarRfidOlv csak akkor mért hiba, ha az RFID kommunikáció működik, de a rakomány nem egyezik.
             // Ha az RFID olvasók nem elérhetők, a GyarRfidOlv CONSEQUENCE lesz a KommRfidUp alatt.
             if (diagnoses.KommRfidUp.Data)
             {
-                await TreeSearchF(FaultSearch.KommRfidUp.Name);
+                MarkFault(FaultSearch.KommRfidUp.Name);
+                return;
+            }
+
+            MarkWorking(FaultSearch.KommRfidUp.Name);
+
+            if (diagnoses.GyarRfidOlv.Data)
+            {
+                MarkFault(FaultSearch.GyarRfidOlv.Name);
             }
             else
             {
-                await TreeSearchW(FaultSearch.KommRfidUp.Name);
-
-                if (diagnoses.GyarRfidOlv.Data)
-                {
-                    await TreeSearchF(FaultSearch.GyarRfidOlv.Name);
-                }
-                else
-                {
-                    await TreeSearchW(FaultSearch.GyarRfidOlv.Name);
-                }
+                MarkWorking(FaultSearch.GyarRfidOlv.Name);
             }
+        }
 
-            // --- EGYÉB HIBÁK AUTOMATIKUS FRISSÍTÉSE ---
+        private void AnalyseRemainingDiagnoses(bool carOnline, bool tankOnline)
+        {
             // Minden olyan hiba, amit manuálisan nem fedtünk le fentebb. Itt már nincs
             // hierarchikus terjesztés: csak az adott diagnosztikai bemenet saját állapotát írjuk.
             // Az offline szülő alatti gyermekeket szándékosan kihagyjuk, hogy az RCA CONSEQUENCE-ként jelölje őket.
@@ -205,7 +244,7 @@ namespace DiagnoseDashboard.Data
 
                 if (currentDiagnose.Data)
                 {
-                    await TreeSearchF(currentDiagnose.Name);
+                    MarkFault(currentDiagnose.Name);
                 }
             }
         }
@@ -276,7 +315,7 @@ namespace DiagnoseDashboard.Data
                     Console.WriteLine("Nem lehetett csatlakozni");
                     answer = ProfileMessages.MQTTNOTUP;
                     Console.WriteLine("ConnectMQTT No: " + answer);
-                    faultSearch.faultDatas.FirstOrDefault(item => item.Name == FaultSearch.KommKozpont.Name).FaultStatus = FaultStatus.FAULT;
+                    MarkFault(FaultSearch.KommKozpont.Name);
                 }
             }
             else
@@ -286,7 +325,7 @@ namespace DiagnoseDashboard.Data
                 try
                 {
                     await MQTTConnectionAsync();
-                    faultSearch.faultDatas.FirstOrDefault(item => item.Name == FaultSearch.KommKozpont.Name).FaultStatus = FaultStatus.WORKING;
+                    MarkWorking(FaultSearch.KommKozpont.Name);
                 }
                 catch (Exception)
                 {
