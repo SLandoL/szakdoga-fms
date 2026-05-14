@@ -1,6 +1,7 @@
 ﻿@page "/dashboard"
 
 @using Data
+@using Model
 @using ViewModels
 @inject DashboardViewModel dashboardVM
 @inject FaultSearch faultSearch
@@ -56,6 +57,37 @@
                     <span class="fault_card_state">@view.StatusText</span>
                 </button>
             }
+        </div>
+
+        <div class="rfid_panel">
+            <div class="rfid_panel_title">RFID diagnosztika</div>
+            <div class="rfid_panel_grid">
+                <div class="rfid_panel_item">
+                    <span class="rfid_label">ESP kapcsolat</span>
+                    <span class="rfid_value">@FormatOnline(dashboardVM.RfidStatus.EspOnline)</span>
+                    <span class="rfid_subvalue">Utolsó heartbeat: @FormatRelativeTime(dashboardVM.RfidStatus.LastHeartbeatUtc)</span>
+                </div>
+                <div class="rfid_panel_item">
+                    <span class="rfid_label">Tank olvasó</span>
+                    <span class="rfid_value">@FormatReaderStatus(dashboardVM.RfidStatus.TankReaderOk, dashboardVM.RfidStatus.TankReaderFresh)</span>
+                    <span class="rfid_subvalue">Hibakód: @dashboardVM.RfidStatus.TankReaderErrorCode</span>
+                </div>
+                <div class="rfid_panel_item">
+                    <span class="rfid_label">Raktár olvasó</span>
+                    <span class="rfid_value">@FormatReaderStatus(dashboardVM.RfidStatus.WarehouseReaderOk, dashboardVM.RfidStatus.WarehouseReaderFresh)</span>
+                    <span class="rfid_subvalue">Hibakód: @dashboardVM.RfidStatus.WarehouseReaderErrorCode</span>
+                </div>
+                <div class="rfid_panel_item">
+                    <span class="rfid_label">Rakományegyezés</span>
+                    <span class="rfid_value">@FormatCargoMatch(dashboardVM.RfidStatus)</span>
+                    <span class="rfid_subvalue">Utolsó olvasás: @FormatRelativeTime(dashboardVM.RfidStatus.LastCargoReadUtc)</span>
+                </div>
+                <div class="rfid_panel_item rfid_panel_item_wide">
+                    <span class="rfid_label">Olvasott rakományok</span>
+                    <span class="rfid_value">Tank: @FormatCargoId(dashboardVM.RfidStatus.TankCargoId) | Raktár: @FormatCargoId(dashboardVM.RfidStatus.WarehouseCargoId)</span>
+                    <span class="rfid_subvalue">@dashboardVM.RfidStatus.DiagnosticSummary</span>
+                </div>
+            </div>
         </div>
 
         <div class="footer_1 pb-1">
@@ -183,6 +215,62 @@
             default:
                 return "Elérhető";
         }
+    }
+
+    private string FormatOnline(bool online)
+    {
+        return online ? "online" : "offline";
+    }
+
+    private string FormatReaderStatus(bool ok, bool fresh)
+    {
+        if (!fresh)
+        {
+            return "nincs friss adat";
+        }
+
+        return ok ? "működik" : "nem működik";
+    }
+
+    private string FormatCargoMatch(RfidStatus status)
+    {
+        if (!status.CargoMatchKnown)
+        {
+            return "nincs friss egyezési adat";
+        }
+
+        return status.CargoMatch ? "egyezik" : "nem egyezik";
+    }
+
+    private string FormatCargoId(string value)
+    {
+        return string.IsNullOrWhiteSpace(value) ? "-" : value;
+    }
+
+    private string FormatRelativeTime(DateTime value)
+    {
+        if (value == DateTime.MinValue)
+        {
+            return "nincs adat";
+        }
+
+        TimeSpan age = DateTime.UtcNow - value;
+        if (age.TotalSeconds < 1)
+        {
+            return "most";
+        }
+
+        if (age.TotalSeconds < 60)
+        {
+            return $"{Math.Floor(age.TotalSeconds)} mp";
+        }
+
+        if (age.TotalMinutes < 60)
+        {
+            return $"{Math.Floor(age.TotalMinutes)} perc";
+        }
+
+        return value.ToLocalTime().ToString("yyyy.MM.dd. HH:mm:ss");
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
