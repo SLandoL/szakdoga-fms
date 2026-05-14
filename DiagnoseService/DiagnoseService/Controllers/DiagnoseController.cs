@@ -1,14 +1,12 @@
-﻿using DiagnoseService.Model;
+﻿using DiagnoseService.Data;
+using DiagnoseService.Model;
 using Microsoft.AspNetCore.Http;
-using DiagnoseService.Data;
 using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
-
-// For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
 namespace DiagnoseService.Controllers
 {
@@ -18,7 +16,7 @@ namespace DiagnoseService.Controllers
     {
         MQTTSubscriber mQTTSubscriber = new MQTTSubscriber();
         public static bool Failure = false;
-        // GET: api/<DiagnoseController>
+
         [HttpGet]
         [Route("Dashboard/GetDiagnoses")]
         public Diagnoses Get()
@@ -26,7 +24,6 @@ namespace DiagnoseService.Controllers
             return MQTTSubscriber.diagnose;
         }
 
-        // GET api/<DiagnoseController>/5
         [HttpPost("MQTTConnection")]
         public async Task MQTT()
         {
@@ -51,7 +48,6 @@ namespace DiagnoseService.Controllers
             }
             catch (Exception)
             {
-
                 return false;
             }
         }
@@ -69,18 +65,28 @@ namespace DiagnoseService.Controllers
         {
             return MQTTSubscriber.GetCarStateSnapshot();
         }
+
         [HttpGet]
         [Route("Dashboard/GetTankState")]
         public string GetTankState()
         {
             return MQTTSubscriber.GetTankStateSnapshot();
         }
+
         [HttpGet]
         [Route("Dashboard/GetBottlesState")]
         public string GetBottleState()
         {
             return MQTTSubscriber.GetBottleStateSnapshot();
         }
+
+        [HttpGet]
+        [Route("Dashboard/GetRfidStatus")]
+        public RfidStatus GetRfidStatus()
+        {
+            return MQTTSubscriber.GetRfidStatusSnapshot();
+        }
+
         [HttpPost("IfFailure")]
         public async Task LEDChange(bool value)
         {

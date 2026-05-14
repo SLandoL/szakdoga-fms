@@ -8,6 +8,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System.Reflection;
 
 namespace DiagnoseService.Controllers
@@ -24,14 +25,10 @@ namespace DiagnoseService.Controllers
         private static DateTime tankStateLastUpdate = DateTime.MinValue;
         private static DateTime bottleStateLastUpdate = DateTime.MinValue;
         private static readonly TimeSpan deviceStateTimeout = TimeSpan.FromSeconds(15);
+        private static readonly TimeSpan rfidHeartbeatTimeout = TimeSpan.FromSeconds(6);
+        private static readonly TimeSpan rfidReaderStatusTimeout = TimeSpan.FromSeconds(6);
 
-        // Alapértelmezetten hamis, tehát induláskor "nem elérhető"-nek tekintjük
-        private static bool tankReaderOk = false;
-        private static bool whReaderOk = false;
-
-        // JAVÍTÁS: Kezdetben igazra állítjuk, hogy ne legyen azonnal hiba a rakományegyezésnél,
-        // amíg nem történt tényleges olvasás.
-        private static bool rakomanyOk = true;
+        private static readonly RfidStatus rfidStatus = new RfidStatus();
 
         private static MqttFactory mqttFactoryPublish = new MqttFactory();
         public static IMqttClient mqttClientPublish = mqttFactoryPublish.CreateMqttClient();
@@ -49,6 +46,31 @@ namespace DiagnoseService.Controllers
         public static string GetBottleStateSnapshot()
         {
             return GetFreshStateOrOffline(bottleState, bottleStateLastUpdate);
+        }
+
+        public static RfidStatus GetRfidStatusSnapshot()
+        {
+            UpdateRfidDiagnose();
+            return new RfidStatus
+            {
+                DeviceId = rfidStatus.DeviceId,
+                EspOnline = rfidStatus.EspOnline,
+                TankReaderOk = rfidStatus.TankReaderOk,
+                WarehouseReaderOk = rfidStatus.WarehouseReaderOk,
+                TankReaderFresh = rfidStatus.TankReaderFresh,
+                WarehouseReaderFresh = rfidStatus.WarehouseReaderFresh,
+                CargoMatch = rfidStatus.CargoMatch,
+                CargoMatchKnown = rfidStatus.CargoMatchKnown,
+                TankCargoId = rfidStatus.TankCargoId,
+                WarehouseCargoId = rfidStatus.WarehouseCargoId,
+                TankReaderErrorCode = rfidStatus.TankReaderErrorCode,
+                WarehouseReaderErrorCode = rfidStatus.WarehouseReaderErrorCode,
+                LastHeartbeatUtc = rfidStatus.LastHeartbeatUtc,
+                LastTankReaderStatusUtc = rfidStatus.LastTankReaderStatusUtc,
+                LastWarehouseReaderStatusUtc = rfidStatus.LastWarehouseReaderStatusUtc,
+                LastCargoReadUtc = rfidStatus.LastCargoReadUtc,
+                DiagnosticSummary = rfidStatus.DiagnosticSummary
+            };
         }
 
         private static string GetFreshStateOrOffline(string state, DateTime lastUpdate)
@@ -106,21 +128,23 @@ namespace DiagnoseService.Controllers
             mqttClient.UseConnectedHandler(async e =>
             {
                 Console.WriteLine("Connected");
-                var topicFilter = new TopicFilterBuilder().WithTopic("Diagnoses").Build();
-                await mqttClient.SubscribeAsync(topicFilter);
+                await SubscribeTopic(mqttClient, "Diagnoses");
 
-                var tankReaderFilter = new TopicFilterBuilder().WithTopic("Tank_olvaso_mukodik").Build();
-                await mqttClient.SubscribeAsync(tankReaderFilter);
+                // Legacy RFID topics kept for backward compatibility with the original firmware.
+                await SubscribeTopic(mqttClient, "Tank_olvaso_mukodik");
+                await SubscribeTopic(mqttClient, "WH_olvaso_mukodik");
+                await SubscribeTopic(mqttClient, "TANK_rakomany");
+                await SubscribeTopic(mqttClient, "WH_rakomany");
+                await SubscribeTopic(mqttClient, "Rakomany_egyezes");
 
-                var whReaderFilter = new TopicFilterBuilder().WithTopic("WH_olvaso_mukodik").Build();
-                await mqttClient.SubscribeAsync(whReaderFilter);
+                // Structured RFID diagnostics topics introduced in the third development phase.
+                await SubscribeTopic(mqttClient, "RFID/Heartbeat");
+                await SubscribeTopic(mqttClient, "RFID/TankReader/Status");
+                await SubscribeTopic(mqttClient, "RFID/WarehouseReader/Status");
+                await SubscribeTopic(mqttClient, "RFID/TankReader/Cargo");
+                await SubscribeTopic(mqttClient, "RFID/WarehouseReader/Cargo");
+                await SubscribeTopic(mqttClient, "RFID/CargoMatch");
 
-                var rakomanyEgyezesFilter = new TopicFilterBuilder().WithTopic("Rakomany_egyezes").Build();
-                await mqttClient.SubscribeAsync(rakomanyEgyezesFilter);
-
-                // Kapcsolódáskor az alapértelmezett értékek alapján még nincs olvasó-kommunikáció,
-                // ezért a rendszer kommunikációs RFID hibát jelezhet. A rakományhiba csak akkor
-                // lesz mért hiba, ha az olvasók működnek, de a rakomány nem egyezik.
                 UpdateRfidDiagnose();
             });
 
@@ -144,11 +168,15 @@ namespace DiagnoseService.Controllers
                         }
                     }
                 }
+                else if (TryHandleStructuredRfidMessage(topic, payloadString))
+                {
+                    UpdateRfidDiagnose();
+                }
                 else if (topic == "Tank_olvaso_mukodik")
                 {
                     if (bool.TryParse(payloadString, out bool value))
                     {
-                        tankReaderOk = value;
+                        UpdateReaderState("tank", value, 0);
                         UpdateRfidDiagnose();
                     }
                 }
@@ -156,15 +184,29 @@ namespace DiagnoseService.Controllers
                 {
                     if (bool.TryParse(payloadString, out bool value))
                     {
-                        whReaderOk = value;
+                        UpdateReaderState("warehouse", value, 0);
                         UpdateRfidDiagnose();
                     }
+                }
+                else if (topic == "TANK_rakomany")
+                {
+                    rfidStatus.TankCargoId = payloadString.Trim('\0', ' ', '\r', '\n');
+                    rfidStatus.LastCargoReadUtc = DateTime.UtcNow;
+                    UpdateRfidDiagnose();
+                }
+                else if (topic == "WH_rakomany")
+                {
+                    rfidStatus.WarehouseCargoId = payloadString.Trim('\0', ' ', '\r', '\n');
+                    rfidStatus.LastCargoReadUtc = DateTime.UtcNow;
+                    UpdateRfidDiagnose();
                 }
                 else if (topic == "Rakomany_egyezes")
                 {
                     if (bool.TryParse(payloadString, out bool value))
                     {
-                        rakomanyOk = value;
+                        rfidStatus.CargoMatch = value;
+                        rfidStatus.CargoMatchKnown = true;
+                        rfidStatus.LastCargoReadUtc = DateTime.UtcNow;
                         UpdateRfidDiagnose();
                     }
                 }
@@ -173,23 +215,178 @@ namespace DiagnoseService.Controllers
             await mqttClient.ConnectAsync(options);
         }
 
+        private static async Task SubscribeTopic(IMqttClient mqttClient, string topic)
+        {
+            var topicFilter = new TopicFilterBuilder().WithTopic(topic).Build();
+            await mqttClient.SubscribeAsync(topicFilter);
+        }
+
+        private static bool TryHandleStructuredRfidMessage(string topic, string payloadString)
+        {
+            if (!topic.StartsWith("RFID/", StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+
+            try
+            {
+                JObject payload = JObject.Parse(payloadString);
+
+                if (topic == "RFID/Heartbeat")
+                {
+                    rfidStatus.DeviceId = ReadString(payload, "deviceId", rfidStatus.DeviceId);
+                    rfidStatus.LastHeartbeatUtc = DateTime.UtcNow;
+
+                    if (payload["tankReaderOk"] != null)
+                    {
+                        rfidStatus.TankReaderOk = payload.Value<bool>("tankReaderOk");
+                    }
+
+                    if (payload["warehouseReaderOk"] != null)
+                    {
+                        rfidStatus.WarehouseReaderOk = payload.Value<bool>("warehouseReaderOk");
+                    }
+
+                    return true;
+                }
+
+                if (topic == "RFID/TankReader/Status")
+                {
+                    UpdateReaderState("tank", payload.Value<bool>("ok"), payload.Value<int?>("errorCode") ?? 0);
+                    return true;
+                }
+
+                if (topic == "RFID/WarehouseReader/Status")
+                {
+                    UpdateReaderState("warehouse", payload.Value<bool>("ok"), payload.Value<int?>("errorCode") ?? 0);
+                    return true;
+                }
+
+                if (topic == "RFID/TankReader/Cargo")
+                {
+                    rfidStatus.TankCargoId = ReadString(payload, "cargoId", rfidStatus.TankCargoId);
+                    rfidStatus.LastCargoReadUtc = DateTime.UtcNow;
+                    return true;
+                }
+
+                if (topic == "RFID/WarehouseReader/Cargo")
+                {
+                    rfidStatus.WarehouseCargoId = ReadString(payload, "cargoId", rfidStatus.WarehouseCargoId);
+                    rfidStatus.LastCargoReadUtc = DateTime.UtcNow;
+                    return true;
+                }
+
+                if (topic == "RFID/CargoMatch")
+                {
+                    rfidStatus.CargoMatch = payload.Value<bool>("match");
+                    rfidStatus.CargoMatchKnown = true;
+                    rfidStatus.TankCargoId = ReadString(payload, "tankCargoId", rfidStatus.TankCargoId);
+                    rfidStatus.WarehouseCargoId = ReadString(payload, "warehouseCargoId", rfidStatus.WarehouseCargoId);
+                    rfidStatus.LastCargoReadUtc = DateTime.UtcNow;
+                    return true;
+                }
+            }
+            catch (JsonException ex)
+            {
+                Console.WriteLine($"RFID JSON feldolgozási hiba. Topic: {topic}, Error: {ex.Message}");
+                return true;
+            }
+
+            return false;
+        }
+
+        private static string ReadString(JObject payload, string propertyName, string fallback)
+        {
+            JToken token = payload[propertyName];
+            if (token == null)
+            {
+                return fallback;
+            }
+
+            string value = token.Value<string>();
+            return string.IsNullOrWhiteSpace(value) ? fallback : value.Trim();
+        }
+
+        private static void UpdateReaderState(string reader, bool ok, int errorCode)
+        {
+            if (string.Equals(reader, "tank", StringComparison.OrdinalIgnoreCase))
+            {
+                rfidStatus.TankReaderOk = ok;
+                rfidStatus.TankReaderErrorCode = errorCode;
+                rfidStatus.LastTankReaderStatusUtc = DateTime.UtcNow;
+            }
+            else
+            {
+                rfidStatus.WarehouseReaderOk = ok;
+                rfidStatus.WarehouseReaderErrorCode = errorCode;
+                rfidStatus.LastWarehouseReaderStatusUtc = DateTime.UtcNow;
+            }
+        }
+
         private static MqttFactory mqttFactoryCar = new MqttFactory();
         private static IMqttClient mqttClientCar = mqttFactoryCar.CreateMqttClient();
 
         private static void UpdateRfidDiagnose()
         {
-            // Ha mindkét olvasó True-t küldött, akkor az RFID kommunikáció rendben van.
-            bool readersOk = tankReaderOk && whReaderOk;
+            DateTime now = DateTime.UtcNow;
 
-            // A kommunikációs hiba mért hiba, ha legalább az egyik olvasó nem működik.
+            rfidStatus.EspOnline = rfidStatus.LastHeartbeatUtc != DateTime.MinValue && now - rfidStatus.LastHeartbeatUtc <= rfidHeartbeatTimeout;
+            rfidStatus.TankReaderFresh = rfidStatus.LastTankReaderStatusUtc != DateTime.MinValue && now - rfidStatus.LastTankReaderStatusUtc <= rfidReaderStatusTimeout;
+            rfidStatus.WarehouseReaderFresh = rfidStatus.LastWarehouseReaderStatusUtc != DateTime.MinValue && now - rfidStatus.LastWarehouseReaderStatusUtc <= rfidReaderStatusTimeout;
+
+            bool readersOk =
+                rfidStatus.EspOnline &&
+                rfidStatus.TankReaderFresh &&
+                rfidStatus.WarehouseReaderFresh &&
+                rfidStatus.TankReaderOk &&
+                rfidStatus.WarehouseReaderOk;
+
             diagnose.KommRfidUp.Data = !readersOk;
+            diagnose.GyarRfidOlv.Data = readersOk && rfidStatus.CargoMatchKnown && !rfidStatus.CargoMatch;
 
-            // A gyártási / rakományegyezési hiba csak akkor mért hiba, ha az olvasók működnek,
-            // de a rakomány nem egyezik. Ha az olvasók nem elérhetők, akkor a GyarRfidOlv
-            // állapotát az RCA CONSEQUENCE-ként származtatja a KommRfidUp hibából.
-            diagnose.GyarRfidOlv.Data = readersOk && !rakomanyOk;
+            rfidStatus.DiagnosticSummary = BuildRfidDiagnosticSummary(readersOk);
 
-            Console.WriteLine($"RFID diagnózis frissítve. Tank: {tankReaderOk}, WH: {whReaderOk}, Egyenlő: {rakomanyOk}, KommHiba: {!readersOk}, GyárHiba: {readersOk && !rakomanyOk}");
+            Console.WriteLine($"RFID diagnózis frissítve. EspOnline: {rfidStatus.EspOnline}, TankFresh: {rfidStatus.TankReaderFresh}, WHFresh: {rfidStatus.WarehouseReaderFresh}, TankOk: {rfidStatus.TankReaderOk}, WHOk: {rfidStatus.WarehouseReaderOk}, CargoKnown: {rfidStatus.CargoMatchKnown}, CargoMatch: {rfidStatus.CargoMatch}, KommHiba: {!readersOk}, GyárHiba: {readersOk && rfidStatus.CargoMatchKnown && !rfidStatus.CargoMatch}");
+        }
+
+        private static string BuildRfidDiagnosticSummary(bool readersOk)
+        {
+            if (!rfidStatus.EspOnline)
+            {
+                return "RFID ESP offline or heartbeat timeout.";
+            }
+
+            if (!rfidStatus.TankReaderFresh)
+            {
+                return "Tank RFID reader status is stale.";
+            }
+
+            if (!rfidStatus.WarehouseReaderFresh)
+            {
+                return "Warehouse RFID reader status is stale.";
+            }
+
+            if (!rfidStatus.TankReaderOk)
+            {
+                return "Tank RFID reader reports a fault.";
+            }
+
+            if (!rfidStatus.WarehouseReaderOk)
+            {
+                return "Warehouse RFID reader reports a fault.";
+            }
+
+            if (!rfidStatus.CargoMatchKnown)
+            {
+                return "RFID readers are available, but no cargo match result has been received yet.";
+            }
+
+            if (!rfidStatus.CargoMatch)
+            {
+                return "RFID readers are available, but the cargo identifiers do not match.";
+            }
+
+            return "RFID ESP and both readers are online, and the cargo identifiers match.";
         }
 
         public async Task SubscribeCarState()

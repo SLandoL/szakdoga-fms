@@ -14,6 +14,7 @@ namespace DiagnoseDashboard.Data
         private static string carstate = "OFFLINE";
         public static string tankState = "OFFLINE";
         public static string bottleState = "OFFLINE";
+        private static RfidStatus rfidStatus = new RfidStatus();
         private static string baseUrl = "https://localhost:5004/";
         private IDashboardData dashboardData = RestService.For<IDashboardData>(baseUrl);
         private static bool connection;
@@ -22,6 +23,8 @@ namespace DiagnoseDashboard.Data
         public ProfileMessages answer = ProfileMessages.NULL;
         private FaultSearch faultSearch;
         private readonly RootCauseAnalyzer rootCauseAnalyzer;
+
+        public RfidStatus CurrentRfidStatus => rfidStatus;
 
         public DiagnoseDashboardService(FaultSearch FaultSearch, RootCauseAnalyzer RootCauseAnalyzer)
         {
@@ -32,8 +35,21 @@ namespace DiagnoseDashboard.Data
         public async Task GetDiagnosesAsync()
         {
             diagnoses = await dashboardData.GetDiagnoses();
+            await RefreshRfidStatus();
             await DiagnoseAnalyse();
             RunRootCauseAnalysis();
+        }
+
+        private async Task RefreshRfidStatus()
+        {
+            try
+            {
+                rfidStatus = await dashboardData.GetRfidStatus();
+            }
+            catch (Exception ex)
+            {
+                rfidStatus.DiagnosticSummary = "RFID status endpoint is not available: " + ex.Message;
+            }
         }
 
         private void RunRootCauseAnalysis()
@@ -206,7 +222,7 @@ namespace DiagnoseDashboard.Data
         {
             // Két fő hibaforrás: kommunikációs hiba és olvasási/rakományegyezési hiba.
             // A GyarRfidOlv csak akkor mért hiba, ha az RFID kommunikáció működik, de a rakomány nem egyezik.
-            // Ha az RFID olvasók nem elérhetők, a GyarRfidOlv CONSEQUENCE lesz a KommRfidUp alatt.
+            // Ha az RFID ESP, heartbeat vagy valamelyik reader nem megbízható, a GyarRfidOlv CONSEQUENCE lesz a KommRfidUp alatt.
             if (diagnoses.KommRfidUp.Data)
             {
                 MarkFault(FaultSearch.KommRfidUp.Name);
@@ -330,7 +346,7 @@ namespace DiagnoseDashboard.Data
                 catch (Exception)
                 {
                 }
-                
+
             }
             CheckConnection();
         }
