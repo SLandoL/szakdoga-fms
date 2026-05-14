@@ -25,6 +25,9 @@ namespace DiagnoseDashboard.Data
         [Get("/api/Diagnose/Dashboard/GetBottlesState")]
         Task<string> GetBottlesState();
 
+        [Get("/api/Diagnose/Dashboard/GetRfidStatus")]
+        Task<RfidStatus> GetRfidStatus();
+
         [Post("/api/Diagnose/MQTTConnectionLost")]
         Task<bool> GetLostConnection();
 
