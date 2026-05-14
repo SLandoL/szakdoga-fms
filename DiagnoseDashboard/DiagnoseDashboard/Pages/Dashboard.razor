@@ -14,10 +14,14 @@
         <div class="content1_dash">
             @foreach (FaultButton button in ProductionFaults)
             {
-                FaultStatus status = GetFaultStatus(button.FaultName);
-                <button @key="button.FaultName" type="button" class="@GetButtonCssClass(status)" title="@GetStatusText(status)">
-                    <span class="fault_status_prefix">@GetStatusPrefix(status)</span>
-                    <span>@Localizer[button.DisplayName]</span>
+                FaultButtonView view = CreateFaultButtonView(button);
+                <button type="button"
+                        class="fault_card @view.CssClass m-2"
+                        style="@view.InlineStyle"
+                        title="@view.Tooltip">
+                    <span class="fault_card_prefix">@view.Prefix</span>
+                    <span class="fault_card_text">@view.DisplayName</span>
+                    <span class="fault_card_state">@view.StatusText</span>
                 </button>
             }
         </div>
@@ -25,10 +29,14 @@
         <div class="content2_dash">
             @foreach (FaultButton button in PowerFaults)
             {
-                FaultStatus status = GetFaultStatus(button.FaultName);
-                <button @key="button.FaultName" type="button" class="@GetButtonCssClass(status)" title="@GetStatusText(status)">
-                    <span class="fault_status_prefix">@GetStatusPrefix(status)</span>
-                    <span>@Localizer[button.DisplayName]</span>
+                FaultButtonView view = CreateFaultButtonView(button);
+                <button type="button"
+                        class="fault_card @view.CssClass m-2"
+                        style="@view.InlineStyle"
+                        title="@view.Tooltip">
+                    <span class="fault_card_prefix">@view.Prefix</span>
+                    <span class="fault_card_text">@view.DisplayName</span>
+                    <span class="fault_card_state">@view.StatusText</span>
                 </button>
             }
         </div>
@@ -38,10 +46,14 @@
         <div class="content3_dash mb-2">
             @foreach (FaultButton button in CommunicationFaults)
             {
-                FaultStatus status = GetFaultStatus(button.FaultName);
-                <button @key="button.FaultName" type="button" class="@GetButtonCssClass(status)" title="@GetStatusText(status)">
-                    <span class="fault_status_prefix">@GetStatusPrefix(status)</span>
-                    <span>@Localizer[button.DisplayName]</span>
+                FaultButtonView view = CreateFaultButtonView(button);
+                <button type="button"
+                        class="fault_card @view.CssClass m-2"
+                        style="@view.InlineStyle"
+                        title="@view.Tooltip">
+                    <span class="fault_card_prefix">@view.Prefix</span>
+                    <span class="fault_card_text">@view.DisplayName</span>
+                    <span class="fault_card_state">@view.StatusText</span>
                 </button>
             }
         </div>
@@ -86,15 +98,33 @@
         new FaultButton(FaultSearch.KommRendszer.Name, "Rendszer kommunikáció")
     };
 
-    private FaultStatus GetFaultStatus(string faultName)
+    private FaultButtonView CreateFaultButtonView(FaultButton button)
     {
-        FaultData fault = faultSearch.faultDatas.FirstOrDefault(item => item.Name == faultName);
-        return fault?.FaultStatus ?? FaultStatus.WORKING;
+        FaultData fault = faultSearch.faultDatas.FirstOrDefault(item => item.Name == button.FaultName);
+        FaultStatus status = fault?.FaultStatus ?? FaultStatus.WORKING;
+        string statusText = GetStatusText(status);
+        string displayName = GetDisplayName(button.DisplayName);
+        string tooltip = fault == null
+            ? $"{displayName}: nincs hozzá tartozó FaultData rekord, ezért WORKING-ként jelenik meg"
+            : $"{displayName}: {statusText} ({button.FaultName})";
+
+        return new FaultButtonView
+        {
+            FaultName = button.FaultName,
+            DisplayName = displayName,
+            Status = status,
+            StatusText = statusText,
+            Prefix = GetStatusPrefix(status),
+            CssClass = GetButtonClass(status),
+            InlineStyle = GetButtonInlineStyle(status),
+            Tooltip = tooltip
+        };
     }
 
-    private string GetButtonCssClass(FaultStatus status)
+    private string GetDisplayName(string displayName)
     {
-        return GetButtonClass(status) + " m-2";
+        var localized = Localizer[displayName];
+        return string.IsNullOrWhiteSpace(localized.Value) ? displayName : localized.Value;
     }
 
     private string GetButtonClass(FaultStatus status)
@@ -102,13 +132,28 @@
         switch (status)
         {
             case FaultStatus.ROOTFAULT:
-                return "button_rootfault";
+                return "fault_card_rootfault";
             case FaultStatus.FAULT:
-                return "button_fault";
+                return "fault_card_fault";
             case FaultStatus.CONSEQUENCE:
-                return "button_consequence";
+                return "fault_card_consequence";
             default:
-                return "button_dash1";
+                return "fault_card_working";
+        }
+    }
+
+    private string GetButtonInlineStyle(FaultStatus status)
+    {
+        switch (status)
+        {
+            case FaultStatus.ROOTFAULT:
+                return "display:flex;visibility:visible;opacity:1;min-height:70px;align-items:center;justify-content:center;gap:.35rem;padding:.4rem .6rem;border-radius:30px;border:3px solid #111111;background:#ef4444;color:#111111;font-weight:bold;box-sizing:border-box;";
+            case FaultStatus.FAULT:
+                return "display:flex;visibility:visible;opacity:1;min-height:70px;align-items:center;justify-content:center;gap:.35rem;padding:.4rem .6rem;border-radius:30px;border:2px solid #b45309;background:#fbbf24;color:#111111;font-weight:bold;box-sizing:border-box;";
+            case FaultStatus.CONSEQUENCE:
+                return "display:flex;visibility:visible;opacity:1;min-height:70px;align-items:center;justify-content:center;gap:.35rem;padding:.4rem .6rem;border-radius:30px;border:3px dashed #1d4ed8;background:#bfdbfe;color:#0f172a;font-weight:bold;box-sizing:border-box;";
+            default:
+                return "display:flex;visibility:visible;opacity:1;min-height:70px;align-items:center;justify-content:center;gap:.35rem;padding:.4rem .6rem;border-radius:30px;border:2px solid #3f8f00;background:#adff2f;color:#111111;font-weight:bold;box-sizing:border-box;";
         }
     }
 
@@ -144,13 +189,10 @@
     {
         try
         {
-            await Task.Run(async () =>
-            {
-                await Task.Delay(1000);
-                await dashboardVM.GetDiagnoses();
-                await dashboardVM.PostLedRed();
-                await InvokeAsync(StateHasChanged);
-            });
+            await Task.Delay(1000);
+            await dashboardVM.GetDiagnoses();
+            await dashboardVM.PostLedRed();
+            await InvokeAsync(StateHasChanged);
         }
         catch (Exception)
         {
@@ -168,5 +210,17 @@
             FaultName = faultName;
             DisplayName = displayName;
         }
+    }
+
+    private class FaultButtonView
+    {
+        public string FaultName { get; set; }
+        public string DisplayName { get; set; }
+        public FaultStatus Status { get; set; }
+        public string StatusText { get; set; }
+        public string Prefix { get; set; }
+        public string CssClass { get; set; }
+        public string InlineStyle { get; set; }
+        public string Tooltip { get; set; }
     }
 }
