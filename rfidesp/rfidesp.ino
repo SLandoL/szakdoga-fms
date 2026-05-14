@@ -3,7 +3,6 @@
 #include <SPI.h>
 #include <MFRC522.h>
 
-
 // Replace the next variables with your SSID/Password combination
 const char* ssid = "FMS-WiFi";
 const char* password = "I40okos%";
@@ -17,7 +16,20 @@ long lastMsg = 0;
 char msg[50];
 int value = 0;
 int errResponse = 0;
-bool elsore = 1;  //olvaso mukodesenek 1x publikalasara
+
+const unsigned long heartbeatIntervalMs = 2000;
+const unsigned long readerStatusIntervalMs = 2000;
+unsigned long lastHeartbeat = 0;
+unsigned long lastReaderStatusPublish = 0;
+
+bool tankReaderOk = false;
+bool warehouseReaderOk = false;
+bool tankReaderStatusKnown = false;
+bool warehouseReaderStatusKnown = false;
+bool lastPublishedTankReaderOk = false;
+bool lastPublishedWarehouseReaderOk = false;
+int tankReaderErrorCode = 0;
+int warehouseReaderErrorCode = 0;
 
 /*Using Hardware SPI of Arduino */
 /*MOSI (11), MISO (12) and SCK (13) are fixed */
@@ -34,7 +46,6 @@ MFRC522::MIFARE_Key key;
 
 /* Create an array of 16 Bytes and fill it with data */
 /* This is the actual data which is going to be written into the card */
-
 byte blockData[16] = { "Xanax" };
 int blockNum = 4;
 /* Create another array to read data from Block */
@@ -54,9 +65,11 @@ void setup() {
   /* Initialize SPI bus */
   SPI.begin();
   /* Initialize MFRC522 Module */
+  mfrc522_WH.PCD_Init();
+  mfrc522_TANK.PCD_Init();
   mfrc522_WH.PCD_SetAntennaGain(mfrc522_WH.RxGain_max);
   mfrc522_TANK.PCD_SetAntennaGain(mfrc522_TANK.RxGain_max);
-  /* Prepare the ksy for authentication */
+  /* Prepare the key for authentication */
   /* All keys are set to FFFFFFFFFFFFh at chip delivery from the factory */
   for (byte i = 0; i < 6; i++) {
     key.keyByte[i] = 0x00;
@@ -73,7 +86,7 @@ void reconnect() {
   while (!client.connected()) {
     Serial.print("Attempting MQTT connection...");
     // Attempt to connect
-    if (client.connect("ESP8266Client")) {
+    if (client.connect("RFID-ESP")) {
       Serial.println("connected");
       // Subscribe
       //client.subscribe("esp32/output");
@@ -81,7 +94,6 @@ void reconnect() {
       Serial.print("failed, rc=");
       Serial.print(client.state());
       Serial.println(" try again in 1 second");
-      // Wait 5 seconds before retrying
       delay(1000);
       retryCount++;
       if (retryCount > 5) {
@@ -135,141 +147,240 @@ void setup_wifi() {
 }
 
 void loop() {
-
   if (!client.connected()) {
     reconnect();
   }
 
   client.loop();
+  updateReaderHealth();
+  publishPeriodicDiagnostics();
+  handleTankReader();
+  handleWarehouseReader();
+  publishCargoMatchIfReady();
+}
 
-  if (elsore == 1) {
-    elsore = 0;
-    client.publish("Tank_olvaso_mukodik", "True");
-    client.publish("WH_olvaso_mukodik", "True");
+void publishPeriodicDiagnostics() {
+  unsigned long now = millis();
+
+  if (lastHeartbeat == 0 || now - lastHeartbeat >= heartbeatIntervalMs) {
+    lastHeartbeat = now;
+    publishHeartbeat();
   }
 
+  if (lastReaderStatusPublish == 0 || now - lastReaderStatusPublish >= readerStatusIntervalMs) {
+    lastReaderStatusPublish = now;
+    publishReaderStatus("RFID/TankReader/Status", "tank", tankReaderOk, tankReaderErrorCode);
+    publishReaderStatus("RFID/WarehouseReader/Status", "warehouse", warehouseReaderOk, warehouseReaderErrorCode);
+  }
+}
 
-  errResponse = mfrc522_TANK.PCD_ReadRegister(MFRC522::ComIrqReg);
-  if (errResponse != 69 && errResponse != 21 && errResponse != 100 && errResponse != 101) {  //Tank olvaso nincs tap 
-    client.publish("Tank_olvaso_mukodik", "False");
-    do {
-      Serial.print("Tank olvaso szar, code: ");
-      Serial.println(errResponse);
-      delay(500);
-      mfrc522_TANK.PCD_Init();
-      errResponse = mfrc522_TANK.PCD_ReadRegister(MFRC522::ComIrqReg);
+void updateReaderHealth() {
+  tankReaderErrorCode = mfrc522_TANK.PCD_ReadRegister(MFRC522::ComIrqReg);
+  warehouseReaderErrorCode = mfrc522_WH.PCD_ReadRegister(MFRC522::ComIrqReg);
 
-    } while (errResponse != 20); 
-    Serial.print("Tank olvaso megjavult! code: ");
-    Serial.println(errResponse);
-    client.publish("Tank_olvaso_mukodik", "True");
+  bool currentTankReaderOk = isReaderRegisterOk(tankReaderErrorCode);
+  bool currentWarehouseReaderOk = isReaderRegisterOk(warehouseReaderErrorCode);
+
+  if (!currentTankReaderOk) {
+    Serial.print("Tank olvaso hiba, code: ");
+    Serial.println(tankReaderErrorCode);
+    mfrc522_TANK.PCD_Init();
   }
 
-
-  errResponse = mfrc522_WH.PCD_ReadRegister(MFRC522::ComIrqReg);
-  if (errResponse != 69 && errResponse != 21 && errResponse != 100 && errResponse != 101) {  //WH olvaso nincs tap
-    client.publish("WH_olvaso_mukodik", "False");
-    do {
-      Serial.print("WH olvaso szar, error: ");
-      Serial.println(errResponse);
-      delay(500);
-      mfrc522_WH.PCD_Init();
-
-      errResponse = mfrc522_WH.PCD_ReadRegister(MFRC522::ComIrqReg);
-    } while (errResponse != 20);
-    Serial.print("WH olvaso megjavult! code: ");
-    Serial.println(errResponse);
-    client.publish("WH_olvaso_mukodik", "True");
+  if (!currentWarehouseReaderOk) {
+    Serial.print("WH olvaso hiba, code: ");
+    Serial.println(warehouseReaderErrorCode);
+    mfrc522_WH.PCD_Init();
   }
 
+  tankReaderOk = currentTankReaderOk;
+  warehouseReaderOk = currentWarehouseReaderOk;
+
+  publishLegacyReaderStatusIfChanged("Tank_olvaso_mukodik", tankReaderOk, lastPublishedTankReaderOk, tankReaderStatusKnown);
+  publishLegacyReaderStatusIfChanged("WH_olvaso_mukodik", warehouseReaderOk, lastPublishedWarehouseReaderOk, warehouseReaderStatusKnown);
+}
+
+bool isReaderRegisterOk(int errorCode) {
+  return errorCode == 20 || errorCode == 21 || errorCode == 69 || errorCode == 100 || errorCode == 101;
+}
+
+void publishLegacyReaderStatusIfChanged(const char* topic, bool currentValue, bool& lastPublishedValue, bool& known) {
+  if (!known || currentValue != lastPublishedValue) {
+    publishBoolTopic(topic, currentValue);
+    lastPublishedValue = currentValue;
+    known = true;
+  }
+}
+
+void publishBoolTopic(const char* topic, bool value) {
+  client.publish(topic, value ? "True" : "False");
+}
+
+void publishHeartbeat() {
+  char buffer[256];
+  snprintf(
+    buffer,
+    sizeof(buffer),
+    "{\"deviceId\":\"rfid-esp\",\"uptimeMs\":%lu,\"wifiConnected\":%s,\"mqttConnected\":%s,\"tankReaderOk\":%s,\"warehouseReaderOk\":%s}",
+    millis(),
+    WiFi.status() == WL_CONNECTED ? "true" : "false",
+    client.connected() ? "true" : "false",
+    tankReaderOk ? "true" : "false",
+    warehouseReaderOk ? "true" : "false"
+  );
+  client.publish("RFID/Heartbeat", buffer);
+}
+
+void publishReaderStatus(const char* topic, const char* reader, bool ok, int errorCode) {
+  char buffer[160];
+  snprintf(
+    buffer,
+    sizeof(buffer),
+    "{\"reader\":\"%s\",\"ok\":%s,\"lastCheckMs\":%lu,\"errorCode\":%d}",
+    reader,
+    ok ? "true" : "false",
+    millis(),
+    errorCode
+  );
+  client.publish(topic, buffer);
+}
+
+void publishCargo(const char* legacyTopic, const char* structuredTopic, const char* reader, byte readBlockData[], bool readOk) {
+  char cargoId[17];
+  copyCargoId(readBlockData, cargoId, sizeof(cargoId));
+
+  if (readOk) {
+    client.publish(legacyTopic, cargoId);
+    Serial.print(" published in ");
+    Serial.println(legacyTopic);
+  }
+
+  char buffer[192];
+  snprintf(
+    buffer,
+    sizeof(buffer),
+    "{\"reader\":\"%s\",\"cargoId\":\"%s\",\"readOk\":%s,\"timestampMs\":%lu}",
+    reader,
+    cargoId,
+    readOk ? "true" : "false",
+    millis()
+  );
+  client.publish(structuredTopic, buffer);
+}
+
+void copyCargoId(byte source[], char target[], size_t targetSize) {
+  size_t targetIndex = 0;
+  for (int j = 0; j < 16 && targetIndex < targetSize - 1; j++) {
+    if (source[j] != 0) {
+      target[targetIndex++] = (char)source[j];
+    }
+  }
+  target[targetIndex] = '\0';
+}
+
+void handleTankReader() {
   //Tank olvaso loopja
   /* Look for new cards */
   /* Reset the loop if no new card is present on RC522 Reader */
   if (mfrc522_TANK.PICC_IsNewCardPresent()) {
     /* Select one of the cards */
     if (mfrc522_TANK.PICC_ReadCardSerial()) {
-
-
       Serial.print("\n");
       Serial.println("**TANK Card Detected**");
 
-      //Call 'WriteDataToBlock_WH' function, which will write data to the block
-      /*
-      Serial.print("\n");
-      Serial.println("Writing to Data Block...");
-      WriteDataToBlock_WH(4, blockData); 
-      */
+      memset(readBlockData_TANK, 0, sizeof(readBlockData_TANK));
+      bool readOk = ReadDataFromBlock_TANK(blockNum, readBlockData_TANK);
 
-      ReadDataFromBlock_TANK(blockNum, readBlockData_TANK);
-      //if (blockNum == 4) {
-      for (int j = 0; j < 16; j++) {
-        if (readBlockData_TANK[j] != 0) {
-          Serial.write(readBlockData_TANK[j]);
+      if (readOk) {
+        for (int j = 0; j < 16; j++) {
+          if (readBlockData_TANK[j] != 0) {
+            Serial.write(readBlockData_TANK[j]);
+          }
         }
       }
 
-      client.publish("TANK_rakomany", reinterpret_cast<const char*>(readBlockData_TANK));
-      Serial.println(" published in TANK_rakomany");
+      publishCargo("TANK_rakomany", "RFID/TankReader/Cargo", "tank", readBlockData_TANK, readOk);
 
       mfrc522_TANK.PICC_HaltA();       // Stop the communication with the card
       //mfrc522_TANK.PCD_StopCrypto1();  // Stop encryption
       delay(100);                      // Small delay to prevent overwhelming the reader
-      newRead_TANK = 1;
+      newRead_TANK = readOk;
     }
   }
+}
 
+void handleWarehouseReader() {
   //Warehouse olvaso loopja
   /* Look for new cards */
   /* Reset the loop if no new card is present on RC522 Reader */
   if (mfrc522_WH.PICC_IsNewCardPresent()) {
     /* Select one of the cards */
     if (mfrc522_WH.PICC_ReadCardSerial()) {
-
       Serial.print("\n");
       Serial.println("**WH Card Detected**");
 
-      /* Call 'WriteDataToBlock_WH' function, which will write data to the block */
-      /*
-      Serial.print("\n");
-      Serial.println("Writing to Data Block...");
-      WriteDataToBlock_WH(4, blockData); 
-      */
+      memset(readBlockData_WH, 0, sizeof(readBlockData_WH));
+      bool readOk = ReadDataFromBlock_WH(blockNum, readBlockData_WH);
 
-      ReadDataFromBlock_WH(blockNum, readBlockData_WH);
-      //if (blockNum == 4) {
-      for (int j = 0; j < 16; j++) {
-        if (readBlockData_WH[j] != 0) {
-          Serial.write(readBlockData_WH[j]);
+      if (readOk) {
+        for (int j = 0; j < 16; j++) {
+          if (readBlockData_WH[j] != 0) {
+            Serial.write(readBlockData_WH[j]);
+          }
         }
       }
-      client.publish("WH_rakomany", reinterpret_cast<const char*>(readBlockData_WH));
-      Serial.println(" published in WH_rakomany");
+
+      publishCargo("WH_rakomany", "RFID/WarehouseReader/Cargo", "warehouse", readBlockData_WH, readOk);
 
       mfrc522_WH.PICC_HaltA();       // Stop the communication with the card
       mfrc522_WH.PCD_StopCrypto1();  // Stop encryption
       delay(100);                    // Small delay to prevent overwhelming the reader
-      if (newRead_TANK) {
+      if (newRead_TANK && readOk) {
         newRead_WH = 1;
-      } else {
-        newRead_TANK = 0;
+      } else if (!readOk) {
+        newRead_WH = 0;
       }
-    }
-  }
-
-  if (newRead_TANK && newRead_WH) {
-    newRead_TANK = 0;
-    newRead_WH = 0;
-    if (memcmp(readBlockData_TANK, readBlockData_WH, 18) == 0) {
-      Serial.println("Ugyan az a ket rakomany");
-      client.publish("Rakomany_egyezes", "True");
-    } else {
-      Serial.println("NEM ugyan az a ket rakomany");
-      client.publish("Rakomany_egyezes", "False");
     }
   }
 }
 
-void ReadDataFromBlock_TANK(int pageNum, byte readBlockData[]) {
+void publishCargoMatchIfReady() {
+  if (newRead_TANK && newRead_WH) {
+    newRead_TANK = 0;
+    newRead_WH = 0;
+    bool cargoMatch = memcmp(readBlockData_TANK, readBlockData_WH, 16) == 0;
+
+    if (cargoMatch) {
+      Serial.println("Ugyan az a ket rakomany");
+    } else {
+      Serial.println("NEM ugyan az a ket rakomany");
+    }
+
+    publishBoolTopic("Rakomany_egyezes", cargoMatch);
+    publishStructuredCargoMatch(cargoMatch);
+  }
+}
+
+void publishStructuredCargoMatch(bool cargoMatch) {
+  char tankCargoId[17];
+  char warehouseCargoId[17];
+  copyCargoId(readBlockData_TANK, tankCargoId, sizeof(tankCargoId));
+  copyCargoId(readBlockData_WH, warehouseCargoId, sizeof(warehouseCargoId));
+
+  char buffer[224];
+  snprintf(
+    buffer,
+    sizeof(buffer),
+    "{\"match\":%s,\"tankCargoId\":\"%s\",\"warehouseCargoId\":\"%s\",\"timestampMs\":%lu}",
+    cargoMatch ? "true" : "false",
+    tankCargoId,
+    warehouseCargoId,
+    millis()
+  );
+  client.publish("RFID/CargoMatch", buffer);
+}
+
+bool ReadDataFromBlock_TANK(int pageNum, byte readBlockData[]) {
   // Ultralight kártyáknál NINCS hitelesítés (Authenticate)!
   // Ezt a lépést teljesen kihagyjuk.
 
@@ -282,18 +393,19 @@ void ReadDataFromBlock_TANK(int pageNum, byte readBlockData[]) {
   if (status != MFRC522::STATUS_OK) {
     Serial.print("Olvasás sikertelen: ");
     Serial.println(mfrc522_TANK.GetStatusCodeName(status));
-    return;
+    return false;
   }
-  
+
   // Átmásoljuk az adatot a kimeneti tömbbe
   for (byte i = 0; i < 16; i++) {
     readBlockData[i] = buffer[i];
   }
   Serial.println("Adat sikeresen beolvasva (Ultralight)!");
+  return true;
 }
 
 // Ugyanez a WH olvasóhoz is kell:
-void ReadDataFromBlock_WH(int pageNum, byte readBlockData[]) {
+bool ReadDataFromBlock_WH(int pageNum, byte readBlockData[]) {
   byte buffer[18];
   byte size = sizeof(buffer);
 
@@ -302,19 +414,20 @@ void ReadDataFromBlock_WH(int pageNum, byte readBlockData[]) {
   if (status != MFRC522::STATUS_OK) {
     Serial.print("Olvasás sikertelen: ");
     Serial.println(mfrc522_WH.GetStatusCodeName(status));
-    return;
+    return false;
   }
-  
+
   for (byte i = 0; i < 16; i++) {
     readBlockData[i] = buffer[i];
   }
   Serial.println("Adat sikeresen beolvasva (Ultralight)!");
+  return true;
 }
 
 void WriteDataToBlock_TANK(int startPage, byte blockData[]) {
   // Ultralight kártyánál 4 byte-ot írunk egyszerre.
   // A 16 byte adatot 4 részletben írjuk fel egymás utáni lapokra.
-  
+
   for (int i = 0; i < 4; i++) {
     byte dataPage[4];
     // Kimásolunk 4 byte-ot a nagy tömbből
@@ -325,7 +438,7 @@ void WriteDataToBlock_TANK(int startPage, byte blockData[]) {
     // Írás az aktuális lapra (startPage + i)
     // FIGYELEM: Itt MIFARE_Ultralight_Write parancsot használunk!
     status = mfrc522_TANK.MIFARE_Ultralight_Write(startPage + i, dataPage, 4);
-    
+
     if (status != MFRC522::STATUS_OK) {
       Serial.print("Iras hiba a lapon: ");
       Serial.print(startPage + i);
@@ -346,7 +459,7 @@ void WriteDataToBlock_WH(int startPage, byte blockData[]) {
     }
 
     status = mfrc522_WH.MIFARE_Ultralight_Write(startPage + i, dataPage, 4);
-    
+
     if (status != MFRC522::STATUS_OK) {
       Serial.print("Iras hiba a lapon: ");
       Serial.print(startPage + i);
