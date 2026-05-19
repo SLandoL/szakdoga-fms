@@ -24,6 +24,8 @@ Ez a tesztterv a 3. fejlesztési szakaszhoz tartozik. A cél annak ellenőrzése
 | RFID-T8 | ESP újraindítása | Rövid timeout után visszaáll online állapotra, ha új heartbeat és reader státusz érkezik |
 | RFID-T9 | Régi cargo adat bent marad, de heartbeat megszűnik | Timeout után ne látszódjon jó állapotnak; `KommRfidUp` legyen a diagnosztikai gyökérhiba |
 | RFID-T10 | Hiba megszüntetése: heartbeat friss, mindkét reader ok, cargo match true | Dashboard és RCA állapot is álljon vissza `WORKING` állapotra |
+| RFID-T11 | Structured cargo topic `readOk = false` értékkel érkezik | A backend ne frissítse az utolsó sikeres cargo olvasás idejét és ne írja felül a cargo ID-t sikertelen olvasással |
+| RFID-T12 | Heartbeatben `tankReaderOk` vagy `warehouseReaderOk` változik, külön reader status még nem érkezik | A heartbeatből érkező reader állapot frissítse a reader freshness időbélyeget is |
 
 ## Kézi MQTT példaüzenetek
 
@@ -52,6 +54,15 @@ mosquitto_pub -h 192.168.0.100 -t RFID/Heartbeat -m '{"deviceId":"rfid-esp","upt
 mosquitto_pub -h 192.168.0.100 -t RFID/TankReader/Status -m '{"reader":"tank","ok":false,"lastCheckMs":3000,"errorCode":0}'
 mosquitto_pub -h 192.168.0.100 -t RFID/WarehouseReader/Status -m '{"reader":"warehouse","ok":true,"lastCheckMs":3000,"errorCode":20}'
 ```
+
+### Sikertelen cargo olvasás
+
+```bash
+mosquitto_pub -h 192.168.0.100 -t RFID/TankReader/Cargo -m '{"reader":"tank","cargoId":"","readOk":false,"timestampMs":4000}'
+mosquitto_pub -h 192.168.0.100 -t RFID/WarehouseReader/Cargo -m '{"reader":"warehouse","cargoId":"","readOk":false,"timestampMs":4000}'
+```
+
+Elvárt eredmény: a dashboardon az utolsó sikeres cargo olvasás ideje és a korábbi cargo ID nem frissül sikertelen olvasás alapján.
 
 ### Heartbeat timeout
 
