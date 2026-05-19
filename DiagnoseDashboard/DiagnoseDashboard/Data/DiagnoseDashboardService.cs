@@ -34,8 +34,10 @@ namespace DiagnoseDashboard.Data
 
         public async Task GetDiagnosesAsync()
         {
-            diagnoses = await dashboardData.GetDiagnoses();
+            // RefreshRfidStatus triggers the DiagnoseService-side RFID timeout evaluation first.
+            // The following GetDiagnoses call therefore receives the current KommRfidUp/GyarRfidOlv values.
             await RefreshRfidStatus();
+            diagnoses = await dashboardData.GetDiagnoses();
             await DiagnoseAnalyse();
             RunRootCauseAnalysis();
         }
