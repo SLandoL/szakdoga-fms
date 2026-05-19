@@ -48,9 +48,14 @@ namespace DiagnoseService.Controllers
             return GetFreshStateOrOffline(bottleState, bottleStateLastUpdate);
         }
 
-        public static RfidStatus GetRfidStatusSnapshot()
+        public static void RefreshRfidDiagnose()
         {
             UpdateRfidDiagnose();
+        }
+
+        public static RfidStatus GetRfidStatusSnapshot()
+        {
+            RefreshRfidDiagnose();
             return new RfidStatus
             {
                 DeviceId = rfidStatus.DeviceId,
@@ -130,7 +135,8 @@ namespace DiagnoseService.Controllers
                 Console.WriteLine("Connected");
                 await SubscribeTopic(mqttClient, "Diagnoses");
 
-                // Legacy RFID topics kept for backward compatibility with the original firmware.
+                // Legacy RFID topic parsers are kept, but reliable timeout-based RFID diagnostics
+                // requires the new RFID/Heartbeat and structured reader status topics.
                 await SubscribeTopic(mqttClient, "Tank_olvaso_mukodik");
                 await SubscribeTopic(mqttClient, "WH_olvaso_mukodik");
                 await SubscribeTopic(mqttClient, "TANK_rakomany");
@@ -145,7 +151,7 @@ namespace DiagnoseService.Controllers
                 await SubscribeTopic(mqttClient, "RFID/WarehouseReader/Cargo");
                 await SubscribeTopic(mqttClient, "RFID/CargoMatch");
 
-                UpdateRfidDiagnose();
+                RefreshRfidDiagnose();
             });
 
             mqttClient.UseApplicationMessageReceivedHandler(e =>
@@ -170,14 +176,14 @@ namespace DiagnoseService.Controllers
                 }
                 else if (TryHandleStructuredRfidMessage(topic, payloadString))
                 {
-                    UpdateRfidDiagnose();
+                    RefreshRfidDiagnose();
                 }
                 else if (topic == "Tank_olvaso_mukodik")
                 {
                     if (bool.TryParse(payloadString, out bool value))
                     {
                         UpdateReaderState("tank", value, 0);
-                        UpdateRfidDiagnose();
+                        RefreshRfidDiagnose();
                     }
                 }
                 else if (topic == "WH_olvaso_mukodik")
@@ -185,20 +191,20 @@ namespace DiagnoseService.Controllers
                     if (bool.TryParse(payloadString, out bool value))
                     {
                         UpdateReaderState("warehouse", value, 0);
-                        UpdateRfidDiagnose();
+                        RefreshRfidDiagnose();
                     }
                 }
                 else if (topic == "TANK_rakomany")
                 {
                     rfidStatus.TankCargoId = payloadString.Trim('\0', ' ', '\r', '\n');
                     rfidStatus.LastCargoReadUtc = DateTime.UtcNow;
-                    UpdateRfidDiagnose();
+                    RefreshRfidDiagnose();
                 }
                 else if (topic == "WH_rakomany")
                 {
                     rfidStatus.WarehouseCargoId = payloadString.Trim('\0', ' ', '\r', '\n');
                     rfidStatus.LastCargoReadUtc = DateTime.UtcNow;
-                    UpdateRfidDiagnose();
+                    RefreshRfidDiagnose();
                 }
                 else if (topic == "Rakomany_egyezes")
                 {
@@ -207,7 +213,7 @@ namespace DiagnoseService.Controllers
                         rfidStatus.CargoMatch = value;
                         rfidStatus.CargoMatchKnown = true;
                         rfidStatus.LastCargoReadUtc = DateTime.UtcNow;
-                        UpdateRfidDiagnose();
+                        RefreshRfidDiagnose();
                     }
                 }
             });
@@ -239,12 +245,12 @@ namespace DiagnoseService.Controllers
 
                     if (payload["tankReaderOk"] != null)
                     {
-                        rfidStatus.TankReaderOk = payload.Value<bool>("tankReaderOk");
+                        UpdateReaderState("tank", payload.Value<bool>("tankReaderOk"), rfidStatus.TankReaderErrorCode);
                     }
 
                     if (payload["warehouseReaderOk"] != null)
                     {
-                        rfidStatus.WarehouseReaderOk = payload.Value<bool>("warehouseReaderOk");
+                        UpdateReaderState("warehouse", payload.Value<bool>("warehouseReaderOk"), rfidStatus.WarehouseReaderErrorCode);
                     }
 
                     return true;
@@ -264,15 +270,13 @@ namespace DiagnoseService.Controllers
 
                 if (topic == "RFID/TankReader/Cargo")
                 {
-                    rfidStatus.TankCargoId = ReadString(payload, "cargoId", rfidStatus.TankCargoId);
-                    rfidStatus.LastCargoReadUtc = DateTime.UtcNow;
+                    UpdateCargoRead("tank", payload);
                     return true;
                 }
 
                 if (topic == "RFID/WarehouseReader/Cargo")
                 {
-                    rfidStatus.WarehouseCargoId = ReadString(payload, "cargoId", rfidStatus.WarehouseCargoId);
-                    rfidStatus.LastCargoReadUtc = DateTime.UtcNow;
+                    UpdateCargoRead("warehouse", payload);
                     return true;
                 }
 
@@ -293,6 +297,27 @@ namespace DiagnoseService.Controllers
             }
 
             return false;
+        }
+
+        private static void UpdateCargoRead(string reader, JObject payload)
+        {
+            bool readOk = payload.Value<bool?>("readOk") ?? true;
+            if (!readOk)
+            {
+                Console.WriteLine($"RFID cargo read failed on {reader}. Last successful cargo read timestamp was not updated.");
+                return;
+            }
+
+            if (string.Equals(reader, "tank", StringComparison.OrdinalIgnoreCase))
+            {
+                rfidStatus.TankCargoId = ReadString(payload, "cargoId", rfidStatus.TankCargoId);
+            }
+            else
+            {
+                rfidStatus.WarehouseCargoId = ReadString(payload, "cargoId", rfidStatus.WarehouseCargoId);
+            }
+
+            rfidStatus.LastCargoReadUtc = DateTime.UtcNow;
         }
 
         private static string ReadString(JObject payload, string propertyName, string fallback)
