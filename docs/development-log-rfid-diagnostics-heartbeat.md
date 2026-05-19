@@ -16,7 +16,7 @@ Ezért a fejlesztés fő célja nem egyszerűen az RFID-hibák megjelenítése v
 
 ## MQTT topicstruktúra
 
-A régi topicok kompatibilitási okból megmaradtak:
+A régi topicok feldolgozása megmaradt, hogy a korábbi payloadok továbbra is értelmezhetők legyenek:
 
 | Topic | Szerep |
 | --- | --- |
@@ -25,6 +25,8 @@ A régi topicok kompatibilitási okból megmaradtak:
 | `TANK_rakomany` | Tank oldali rakomány régi string payloadja |
 | `WH_rakomany` | Raktár oldali rakomány régi string payloadja |
 | `Rakomany_egyezes` | Régi bool rakományegyezés |
+
+Fontos pontosítás, hogy ez nem teljes visszafelé kompatibilitás a régi firmware-rel. Az új, megbízható timeout-alapú diagnosztikához az RFID ESP-nek már `RFID/Heartbeat`, valamint strukturált reader státusz topicokat is küldenie kell. A legacy topicok parserként megmaradtak, de önmagukban nem elegendők az ESP online állapotának bizonyítására.
 
 Ezek mellé bekerültek az új, strukturált topicok:
 
@@ -52,7 +54,7 @@ Az ESP 2 másodpercenként publikál a `RFID/Heartbeat` topicra. A payload tarta
 - `tankReaderOk`,
 - `warehouseReaderOk`.
 
-Ez alapján a backend nemcsak explicit hibaüzenetből, hanem az életjel frissességéből is tud következtetni az ESP elérhetőségére.
+Ez alapján a backend nemcsak explicit hibaüzenetből, hanem az életjel frissességéből is tud következtetni az ESP elérhetőségére. A heartbeatben érkező reader állapotok a backendben a reader timestampet is frissítik, ezért önmagukban is diagnosztikai információt hordoznak.
 
 ### Reader státuszok
 
@@ -61,7 +63,7 @@ Az ESP 2 másodpercenként publikálja mindkét RFID olvasó státuszát:
 - `RFID/TankReader/Status`,
 - `RFID/WarehouseReader/Status`.
 
-A payload tartalmazza az olvasó nevét, az `ok` állapotot, a firmware oldali `lastCheckMs` értéket és az MFRC522 regiszterből olvasott hibakódot. A régi `Tank_olvaso_mukodik` és `WH_olvaso_mukodik` topicokra továbbra is küld üzenetet, de csak kompatibilitási célból.
+A payload tartalmazza az olvasó nevét, az `ok` állapotot, a firmware oldali `lastCheckMs` értéket és az MFRC522 regiszterből olvasott hibakódot. A régi `Tank_olvaso_mukodik` és `WH_olvaso_mukodik` topicokra továbbra is küld üzenetet, de ezek az új diagnosztikában inkább kiegészítő/legacy bemenetek.
 
 ### Rakományolvasás
 
@@ -71,7 +73,9 @@ A firmware strukturált cargo üzeneteket is küld:
 - `RFID/WarehouseReader/Cargo`,
 - `RFID/CargoMatch`.
 
-A régi `TANK_rakomany`, `WH_rakomany` és `Rakomany_egyezes` topicok megmaradtak, így a régebbi backend működés nem törik el.
+A structured cargo üzenetek `readOk` mezőt is tartalmaznak. A backend csak akkor frissíti a cargo ID-t és az utolsó sikeres cargo olvasás időpontját, ha `readOk = true`. Sikertelen olvasási próbálkozás esetén az utolsó sikeres cargo olvasás timestampje nem frissül, így a dashboard nem mutat tévesen friss sikeres olvasást.
+
+A régi `TANK_rakomany`, `WH_rakomany` és `Rakomany_egyezes` topicok megmaradtak, így a régi payloadok továbbra is feldolgozhatók, de az új timeout-alapú diagnosztika teljes értékű működéséhez az új structured topicok szükségesek.
 
 ### Nem blokkoló hibafigyelés
 
@@ -86,7 +90,7 @@ A backend oldalon új `RfidStatus` modell készült. Ez eltárolja:
 - a reader státuszok frissességét,
 - az utolsó heartbeat időpontját,
 - az utolsó reader státuszok időpontját,
-- az utolsó cargo olvasás időpontját,
+- az utolsó sikeres cargo olvasás időpontját,
 - a két cargo ID-t,
 - a cargo match ismertségét és értékét,
 - a reader hibakódokat,
@@ -113,6 +117,8 @@ Ha az ESP online, mindkét reader friss és ok, és a rakomány egyezik:
 ```
 
 A heartbeat timeout és a reader státusz timeout 6 másodperc. Ez szándékosan nagyobb, mint a 2 másodperces firmware oldali publikálási periódus, így néhány kimaradt üzenet még nem okoz azonnal hibát, de a régi állapot sem marad sokáig tévesen jónak látszó állapotban.
+
+A backendben külön `RefreshRfidDiagnose()` wrapper készült, amelyet a `GetDiagnoses` és a `GetRfidStatus` endpoint is meghív. Így a dashboard nem egy korábbi ciklus RFID diagnózisértékeit kapja meg, hanem a timeout-alapú `KommRfidUp` és `GyarRfidOlv` állapotok lekérés előtt frissülnek.
 
 ## RCA integráció
 
@@ -142,7 +148,7 @@ A dashboard külön RFID diagnosztikai panelt kapott. A panel megjeleníti:
 - reader hibakódok,
 - tank és raktár cargo ID,
 - cargo match állapot,
-- utolsó cargo olvasás ideje,
+- utolsó sikeres cargo olvasás ideje,
 - backend diagnosztikai összefoglaló.
 
 A dashboard így már nemcsak azt mutatja, hogy RFID hiba van, hanem azt is, hogy az ESP, valamelyik olvasó vagy a rakományegyezési folyamat a valószínű problémaforrás.
