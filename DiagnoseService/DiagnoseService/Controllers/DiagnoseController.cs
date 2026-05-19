@@ -21,6 +21,7 @@ namespace DiagnoseService.Controllers
         [Route("Dashboard/GetDiagnoses")]
         public Diagnoses Get()
         {
+            MQTTSubscriber.RefreshRfidDiagnose();
             return MQTTSubscriber.diagnose;
         }
 
