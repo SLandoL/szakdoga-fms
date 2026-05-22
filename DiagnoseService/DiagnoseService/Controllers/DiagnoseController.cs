@@ -88,6 +88,13 @@ namespace DiagnoseService.Controllers
             return MQTTSubscriber.GetRfidStatusSnapshot();
         }
 
+        [HttpGet]
+        [Route("Dashboard/GetPhysicalSwitchStatus")]
+        public PhysicalSwitchSnapshot GetPhysicalSwitchStatus()
+        {
+            return MQTTSubscriber.GetPhysicalSwitchSnapshot();
+        }
+
         [HttpPost("IfFailure")]
         public async Task LEDChange(bool value)
         {
