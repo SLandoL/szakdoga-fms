@@ -4,7 +4,6 @@ using MQTTnet.Client;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -55,10 +54,18 @@ namespace DiagnoseService.Controllers
             {
                 MQTTSubscriber.diagnose.AramTartaly.Data = true;
             }
+            else if (IsSwitchKnownAndEnabled(TankPowerSwitchId))
+            {
+                MQTTSubscriber.diagnose.AramTartaly.Data = false;
+            }
 
             if (IsSwitchKnownAndDisabled(RfidTankPowerSwitchId) || IsSwitchKnownAndDisabled(RfidWarehousePowerSwitchId))
             {
                 MQTTSubscriber.diagnose.KommRfidUp.Data = true;
+            }
+            else if (IsSwitchKnownAndEnabled(RfidTankPowerSwitchId) && IsSwitchKnownAndEnabled(RfidWarehousePowerSwitchId))
+            {
+                MQTTSubscriber.diagnose.KommRfidUp.Data = false;
             }
         }
 
