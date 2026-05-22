@@ -22,6 +22,7 @@ namespace DiagnoseService.Controllers
         public Diagnoses Get()
         {
             MQTTSubscriber.RefreshRfidDiagnose();
+            PhysicalSwitchManager.ApplyDiagnoses();
             return MQTTSubscriber.diagnose;
         }
 
@@ -29,6 +30,7 @@ namespace DiagnoseService.Controllers
         public async Task MQTT()
         {
             await mQTTSubscriber.Subscribe();
+            await PhysicalSwitchSubscriber.Subscribe();
         }
 
         [HttpPost("MQTTConnectionLost")]
@@ -38,6 +40,7 @@ namespace DiagnoseService.Controllers
             {
                 if (MQTTSubscriber.mqttClientPublish.IsConnected)
                 {
+                    await PhysicalSwitchSubscriber.Subscribe();
                     return true;
                 }
                 await mQTTSubscriber.Publish();
@@ -45,6 +48,7 @@ namespace DiagnoseService.Controllers
                 await mQTTSubscriber.SubscribeCarState();
                 await mQTTSubscriber.SubscribeTankState();
                 await mQTTSubscriber.SubscribeBottle();
+                await PhysicalSwitchSubscriber.Subscribe();
                 return true;
             }
             catch (Exception)
@@ -85,14 +89,19 @@ namespace DiagnoseService.Controllers
         [Route("Dashboard/GetRfidStatus")]
         public RfidStatus GetRfidStatus()
         {
-            return MQTTSubscriber.GetRfidStatusSnapshot();
+            RfidStatus status = MQTTSubscriber.GetRfidStatusSnapshot();
+            if (PhysicalSwitchManager.HasRfidPowerInterruption())
+            {
+                status.DiagnosticSummary = PhysicalSwitchManager.BuildRfidPowerSummary();
+            }
+            return status;
         }
 
         [HttpGet]
         [Route("Dashboard/GetPhysicalSwitchStatus")]
         public PhysicalSwitchSnapshot GetPhysicalSwitchStatus()
         {
-            return MQTTSubscriber.GetPhysicalSwitchSnapshot();
+            return PhysicalSwitchManager.GetSnapshot();
         }
 
         [HttpPost("IfFailure")]
