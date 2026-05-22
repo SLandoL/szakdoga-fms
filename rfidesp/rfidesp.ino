@@ -31,6 +31,8 @@ bool lastPublishedWarehouseReaderOk = false;
 int tankReaderErrorCode = 0;
 int warehouseReaderErrorCode = 0;
 
+const char* cargoDisplayMarker = "XXX";
+
 /*Using Hardware SPI of Arduino */
 /*MOSI (11), MISO (12) and SCK (13) are fixed */
 /*You can configure SS and RST Pins*/
@@ -251,8 +253,10 @@ void publishCargo(const char* legacyTopic, const char* structuredTopic, const ch
 
   if (readOk) {
     client.publish(legacyTopic, cargoId);
-    Serial.print(" published in ");
-    Serial.println(legacyTopic);
+    Serial.print("Clean cargo published in ");
+    Serial.print(legacyTopic);
+    Serial.print(": ");
+    Serial.println(cargoId);
   }
 
   char buffer[192];
@@ -269,13 +273,63 @@ void publishCargo(const char* legacyTopic, const char* structuredTopic, const ch
 }
 
 void copyCargoId(byte source[], char target[], size_t targetSize) {
-  size_t targetIndex = 0;
-  for (int j = 0; j < 16 && targetIndex < targetSize - 1; j++) {
-    if (source[j] != 0) {
-      target[targetIndex++] = (char)source[j];
+  char rawValue[17];
+  size_t rawIndex = 0;
+
+  for (int j = 0; j < 16 && rawIndex < sizeof(rawValue) - 1; j++) {
+    byte currentByte = source[j];
+
+    // Ignore zeros and ASCII control bytes. Keep bytes >= 128 so UTF-8 characters such as ö are not removed.
+    if (currentByte == 0 || currentByte < 32 || currentByte == 127) {
+      continue;
     }
+
+    // Do not let card data break the JSON payload.
+    if (currentByte == '"' || currentByte == '\\') {
+      continue;
+    }
+
+    rawValue[rawIndex++] = (char)currentByte;
   }
-  target[targetIndex] = '\0';
+  rawValue[rawIndex] = '\0';
+
+  extractMarkedCargoValue(rawValue, target, targetSize);
+}
+
+void extractMarkedCargoValue(const char* rawValue, char* target, size_t targetSize) {
+  const char* startMarker = strstr(rawValue, cargoDisplayMarker);
+  const char* contentStart = startMarker == NULL ? rawValue : startMarker + strlen(cargoDisplayMarker);
+  const char* endMarker = strstr(contentStart, cargoDisplayMarker);
+
+  size_t copyLength = endMarker == NULL ? strlen(contentStart) : (size_t)(endMarker - contentStart);
+  if (copyLength >= targetSize) {
+    copyLength = targetSize - 1;
+  }
+
+  strncpy(target, contentStart, copyLength);
+  target[copyLength] = '\0';
+  trimCargoString(target);
+}
+
+void trimCargoString(char* value) {
+  size_t length = strlen(value);
+  while (length > 0 && isCargoWhitespace(value[length - 1])) {
+    value[length - 1] = '\0';
+    length--;
+  }
+
+  size_t startIndex = 0;
+  while (value[startIndex] != '\0' && isCargoWhitespace(value[startIndex])) {
+    startIndex++;
+  }
+
+  if (startIndex > 0) {
+    memmove(value, value + startIndex, strlen(value + startIndex) + 1);
+  }
+}
+
+bool isCargoWhitespace(char value) {
+  return value == ' ' || value == '\t' || value == '\r' || value == '\n';
 }
 
 void handleTankReader() {
@@ -292,11 +346,10 @@ void handleTankReader() {
       bool readOk = ReadDataFromBlock_TANK(blockNum, readBlockData_TANK);
 
       if (readOk) {
-        for (int j = 0; j < 16; j++) {
-          if (readBlockData_TANK[j] != 0) {
-            Serial.write(readBlockData_TANK[j]);
-          }
-        }
+        char cargoId[17];
+        copyCargoId(readBlockData_TANK, cargoId, sizeof(cargoId));
+        Serial.print("TANK cargo: ");
+        Serial.println(cargoId);
       }
 
       publishCargo("TANK_rakomany", "RFID/TankReader/Cargo", "tank", readBlockData_TANK, readOk);
@@ -323,11 +376,10 @@ void handleWarehouseReader() {
       bool readOk = ReadDataFromBlock_WH(blockNum, readBlockData_WH);
 
       if (readOk) {
-        for (int j = 0; j < 16; j++) {
-          if (readBlockData_WH[j] != 0) {
-            Serial.write(readBlockData_WH[j]);
-          }
-        }
+        char cargoId[17];
+        copyCargoId(readBlockData_WH, cargoId, sizeof(cargoId));
+        Serial.print("WH cargo: ");
+        Serial.println(cargoId);
       }
 
       publishCargo("WH_rakomany", "RFID/WarehouseReader/Cargo", "warehouse", readBlockData_WH, readOk);
@@ -348,7 +400,13 @@ void publishCargoMatchIfReady() {
   if (newRead_TANK && newRead_WH) {
     newRead_TANK = 0;
     newRead_WH = 0;
-    bool cargoMatch = memcmp(readBlockData_TANK, readBlockData_WH, 16) == 0;
+
+    char tankCargoId[17];
+    char warehouseCargoId[17];
+    copyCargoId(readBlockData_TANK, tankCargoId, sizeof(tankCargoId));
+    copyCargoId(readBlockData_WH, warehouseCargoId, sizeof(warehouseCargoId));
+
+    bool cargoMatch = strlen(tankCargoId) > 0 && strcmp(tankCargoId, warehouseCargoId) == 0;
 
     if (cargoMatch) {
       Serial.println("Ugyan az a ket rakomany");
@@ -384,7 +442,7 @@ bool ReadDataFromBlock_TANK(int pageNum, byte readBlockData[]) {
   // Ultralight kártyáknál NINCS hitelesítés (Authenticate)!
   // Ezt a lépést teljesen kihagyjuk.
 
-  byte buffer[18];
+  byte buffer[18] = { 0 };
   byte size = sizeof(buffer);
 
   // Az olvasás a 'pageNum'-tól indul és 4 lapot olvas ki (16 byte)
@@ -397,16 +455,19 @@ bool ReadDataFromBlock_TANK(int pageNum, byte readBlockData[]) {
   }
 
   // Átmásoljuk az adatot a kimeneti tömbbe
+  memset(readBlockData, 0, 18);
   for (byte i = 0; i < 16; i++) {
     readBlockData[i] = buffer[i];
   }
+  readBlockData[16] = 0;
+  readBlockData[17] = 0;
   Serial.println("Adat sikeresen beolvasva (Ultralight)!");
   return true;
 }
 
 // Ugyanez a WH olvasóhoz is kell:
 bool ReadDataFromBlock_WH(int pageNum, byte readBlockData[]) {
-  byte buffer[18];
+  byte buffer[18] = { 0 };
   byte size = sizeof(buffer);
 
   status = mfrc522_WH.MIFARE_Read(pageNum, buffer, &size);
@@ -417,9 +478,12 @@ bool ReadDataFromBlock_WH(int pageNum, byte readBlockData[]) {
     return false;
   }
 
+  memset(readBlockData, 0, 18);
   for (byte i = 0; i < 16; i++) {
     readBlockData[i] = buffer[i];
   }
+  readBlockData[16] = 0;
+  readBlockData[17] = 0;
   Serial.println("Adat sikeresen beolvasva (Ultralight)!");
   return true;
 }
