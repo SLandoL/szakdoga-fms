@@ -49,7 +49,7 @@
     height: calc(100vh - 56px);
     display: grid;
     grid-template-columns: 1fr 1fr;
-    grid-template-rows: 40px 1fr 40px 1fr 60px;
+    grid-template-rows: 40px minmax(145px, 1fr) 40px minmax(145px, 1fr) minmax(145px, auto) 60px;
     gap: 5px;
     box-sizing: border-box;
 }
@@ -74,8 +74,8 @@
 }
 
 .header3_dash {
-    grid-row-start: 2;
     grid-row-start: 3;
+    grid-row-end: 4;
     grid-column-start: 1;
     grid-column-end: 3;
     padding: 2px;
@@ -127,9 +127,67 @@
     gap: 4px;
 }
 
-.footer_1 {
+.rfid_panel {
     grid-row-start: 5;
     grid-row-end: 6;
+    grid-column-start: 1;
+    grid-column-end: 3;
+    border-radius: 25px;
+    background-color: rgba(255, 255, 255, 0.55);
+    border: 4px solid #000000;
+    padding: 8px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.rfid_panel_title {
+    text-align: center;
+    font-weight: 900;
+    font-size: 1.35rem;
+}
+
+.rfid_panel_grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+}
+
+.rfid_panel_item {
+    border: 2px solid #111111;
+    border-radius: 16px;
+    padding: 6px 8px;
+    background: rgba(255, 255, 255, 0.8);
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-height: 62px;
+}
+
+.rfid_panel_item_wide {
+    grid-column-start: 1;
+    grid-column-end: 5;
+}
+
+.rfid_label {
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.rfid_value {
+    font-size: 1.05rem;
+    font-weight: 900;
+}
+
+.rfid_subvalue {
+    font-size: 0.78rem;
+    font-weight: 600;
+}
+
+.footer_1 {
+    grid-row-start: 6;
+    grid-row-end: 7;
     grid-column-start: 1;
     grid-column-end: 3;
     border-radius: 25px;
