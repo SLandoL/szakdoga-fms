@@ -251,9 +251,17 @@
             return "-";
         }
 
-        string trimmedValue = value.Trim('\0', ' ', '\r', '\n', '\t');
-        string markedValue = ExtractMarkedCargoValue(trimmedValue);
+        string cleanedValue = CleanCargoPayload(value);
+        string markedValue = ExtractMarkedCargoValue(cleanedValue);
         return string.IsNullOrWhiteSpace(markedValue) ? "-" : markedValue;
+    }
+
+    private string CleanCargoPayload(string value)
+    {
+        return new string(value
+            .Where(character => !char.IsControl(character))
+            .ToArray())
+            .Trim();
     }
 
     private string ExtractMarkedCargoValue(string value)
@@ -261,17 +269,17 @@
         int startMarkerIndex = value.IndexOf(CargoDisplayMarker, StringComparison.Ordinal);
         if (startMarkerIndex < 0)
         {
-            return value;
+            return value.Replace(CargoDisplayMarker, string.Empty).Trim();
         }
 
         int contentStartIndex = startMarkerIndex + CargoDisplayMarker.Length;
         int endMarkerIndex = value.IndexOf(CargoDisplayMarker, contentStartIndex, StringComparison.Ordinal);
-        if (endMarkerIndex < 0 || endMarkerIndex <= contentStartIndex)
-        {
-            return value;
-        }
 
-        return value.Substring(contentStartIndex, endMarkerIndex - contentStartIndex).Trim();
+        string extractedValue = endMarkerIndex >= contentStartIndex
+            ? value.Substring(contentStartIndex, endMarkerIndex - contentStartIndex)
+            : value.Substring(contentStartIndex);
+
+        return extractedValue.Replace(CargoDisplayMarker, string.Empty).Trim();
     }
 
     private string FormatRelativeTime(DateTime value)
