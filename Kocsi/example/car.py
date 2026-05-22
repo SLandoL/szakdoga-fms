@@ -45,7 +45,18 @@ carStop = False
 deadLine = False
 StopContainer_to_Factory = True
 StopFactory_to_Container = True
+FORCE_NEXT_STOP_FACTORY_EVENT = "ForceNextStopFactory"
 color = "blue"
+
+def force_next_stop_factory():
+    global state
+    # The next stop is interpreted as the factory stop when the route state is Container.
+    # This makes the debug switch edge-triggered: both ON->OFF and OFF->ON changes produce
+    # one command, but the held switch level does not continuously overwrite the route.
+    state = States.Container
+    c.publish("CarLocation", "onTheWayToFactory")
+    print("Debug switch event: next stop forced to factory")
+
 def on_msg(client, userdata, msg):
     print("New MQTT msg")
     global StopContainer_to_Factory
@@ -60,58 +71,64 @@ def on_msg(client, userdata, msg):
     global lt_status_now
     global lf
     global deadLine
+    payload = str(msg.payload.decode("utf-8"))
+    message_parts = payload.split(",")
+
     if (msg.topic == "StopRight"):
-        if(str(msg.payload.decode("utf-8")) == "True"):
+        if(payload == "True"):
             print("StopRight True")
             StopContainer_to_Factory = True
-        if(str(msg.payload.decode("utf-8")) == "False"):
+        if(payload == "False"):
             print("StopRight Fasle")
             StopContainer_to_Factory = False
 
     if (msg.topic == "StopLeft"):
-        if(str(msg.payload.decode("utf-8")) == "True"):
+        if(payload == "True"):
             print("StopLeft True")
             StopFactory_to_Container = True
-        if(str(msg.payload.decode("utf-8")) == "False"):
+        if(payload == "False"):
             print("StopLeft Fasle")
             StopFactory_to_Container = False
     
     if (msg.topic == "ResetPos"):
-        if(str(msg.payload.decode("utf-8")) == "True"):
-            print("Resetpos to container")
-            state = States.Container
-        if(str(msg.payload.decode("utf-8")) == "False"):
-            print("Resetpos to factory")
-            state = States.Factory
+        # ResetPos is used as the physical debug switch. The tank ESP already sends this
+        # topic only when the physical switch changes, so the car must not interpret True
+        # and False as two different route states. Any edge requests the same action:
+        # the next detected stop should be handled as the factory stop.
+        force_next_stop_factory()
         
     if (msg.topic == "carManagement"):
+        if (message_parts[0] == FORCE_NEXT_STOP_FACTORY_EVENT):
+            force_next_stop_factory()
+            return
+
         if (carStop == False):
-            if (str(msg.payload.decode("utf-8")).split(",")[0] == "carSpeed"):
-                carSpeed = int(str(msg.payload.decode("utf-8")).split(",")[1])/100
+            if (message_parts[0] == "carSpeed"):
+                carSpeed = int(message_parts[1])/100
                 bw.speed = int(100*carSpeed)
                 print("The carSpeed is: " + str(carSpeed))
 
-            elif (str(msg.payload.decode("utf-8")).split(",")[0] == "WakeUp"):
+            elif (message_parts[0] == "WakeUp"):
                 c.publish("car-esp",  "start")
                 bw.speed = int(100 * carSpeed)
                 print("Wake up pls!!!")
                 
-            elif (str(msg.payload.decode("utf-8")).split(",")[0] == "Paused"):
-                if(str(msg.payload.decode("utf-8")).split(",")[1] == "True"):
+            elif (message_parts[0] == "Paused"):
+                if(message_parts[1] == "True"):
                     c.publish("car-esp",  "stop")
                     bw.speed = 0
                     print("The car is paused.")
                     
-                elif(str(msg.payload.decode("utf-8")).split(",")[1] == "False"):
+                elif(message_parts[1] == "False"):
                     c.publish("car-esp",  "start")
                     bw.speed = int(100 * carSpeed)
                     print("The car is unpaused.")
 
-        elif (str(msg.payload.decode("utf-8")).split(",")[0] == "carLedColor"):
-            color = str(msg.payload.decode("utf-8")).split(",")[1]
+        elif (message_parts[0] == "carLedColor"):
+            color = message_parts[1]
             print("The car's led color is: " + color)
                     
-        elif (str(msg.payload.decode("utf-8")) == "CarGOBottle"):
+        elif (payload == "CarGOBottle"):
             carCanGoBottle = True
             if(carCanGoTank == True and carCanGoBottle == True):
                 c.publish("car-esp",  "start")
@@ -122,7 +139,7 @@ def on_msg(client, userdata, msg):
                     deadLine = True
                 carStop = False
                     
-        elif (str(msg.payload.decode("utf-8")) == "CarGOTank"):
+        elif (payload == "CarGOTank"):
             carCanGoTank = True
             if(carCanGoTank == True and carCanGoBottle == True):
                 c.publish("car-esp",  "start")
@@ -133,7 +150,7 @@ def on_msg(client, userdata, msg):
                     deadLine = True
                 carStop = False
                     
-        elif (str(msg.payload.decode("utf-8")) == "CarGOContainer"):
+        elif (payload == "CarGOContainer"):
             c.publish("car-esp",  "start")
             bw.speed = int(100 * carSpeed)
             lt_status_now = lf.read_digital()
