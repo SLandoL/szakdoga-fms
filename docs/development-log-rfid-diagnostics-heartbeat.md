@@ -65,6 +65,26 @@ Az ESP 2 másodpercenként publikálja mindkét RFID olvasó státuszát:
 
 A payload tartalmazza az olvasó nevét, az `ok` állapotot, a firmware oldali `lastCheckMs` értéket és az MFRC522 regiszterből olvasott hibakódot. A régi `Tank_olvaso_mukodik` és `WH_olvaso_mukodik` topicokra továbbra is küld üzenetet, de ezek az új diagnosztikában inkább kiegészítő/legacy bemenetek.
 
+### RFID cargo payload formátum
+
+A kártyán tárolt rakományazonosító ajánlott formátuma:
+
+```text
+XXX<cargoId>XXX
+```
+
+Például:
+
+```text
+XXXsörXXX
+XXXrakományXXX
+XXXárvízXXX
+```
+
+A három `X` karakterből álló kezdő és záró marker célja, hogy a rendszer a nyers RFID memóriablokkokból biztosan ki tudja emelni a megjelenítendő rakományazonosítót. Erre azért van szükség, mert az RFID memóriában a hasznos string mellett maradhatnak régi, bináris vagy nem megjelenítendő bájtok is. A firmware és a dashboard is ezt a markerformátumot használja a cargo ID tisztítására.
+
+A kártyára írt szöveg UTF-8 kódolású lehet. Emiatt a karakterek száma és a bájtok száma nem mindig egyezik meg, például az ékezetes karakterek több bájtot foglalhatnak. A firmware ezért a korábbi 16 bájtos olvasás helyett legfeljebb 48 bájtot olvas össze, és a záró `XXX` marker megtalálása után áll meg. Ez támogatja a `XXX` + legfeljebb 8 UTF-8 karakter + `XXX` formátumú payloadokat.
+
 ### Rakományolvasás
 
 A firmware strukturált cargo üzeneteket is küld:
@@ -74,6 +94,8 @@ A firmware strukturált cargo üzeneteket is küld:
 - `RFID/CargoMatch`.
 
 A structured cargo üzenetek `readOk` mezőt is tartalmaznak. A backend csak akkor frissíti a cargo ID-t és az utolsó sikeres cargo olvasás időpontját, ha `readOk = true`. Sikertelen olvasási próbálkozás esetén az utolsó sikeres cargo olvasás timestampje nem frissül, így a dashboard nem mutat tévesen friss sikeres olvasást.
+
+A firmware a cargo topicokra már tisztított rakományazonosítót publikál. A tisztítás során a nyers RFID bájtokból eltávolításra kerülnek a kontrollkarakterek és a JSON payloadot elrontó karakterek, majd a rendszer a `XXX` markerek közötti értéket használja cargo ID-ként. A rakományegyezés vizsgálata sem nyers bájtösszehasonlítással történik, hanem a tisztított cargo ID-k összehasonlításával.
 
 A régi `TANK_rakomany`, `WH_rakomany` és `Rakomany_egyezes` topicok megmaradtak, így a régi payloadok továbbra is feldolgozhatók, de az új timeout-alapú diagnosztika teljes értékű működéséhez az új structured topicok szükségesek.
 
@@ -151,6 +173,8 @@ A dashboard külön RFID diagnosztikai panelt kapott. A panel megjeleníti:
 - utolsó sikeres cargo olvasás ideje,
 - backend diagnosztikai összefoglaló.
 
+A dashboard a megjelenítés előtt szintén alkalmazza az `XXX<cargoId>XXX` marker alapú kiemelést, ezért akkor is csak a hasznos rakományazonosító látszik, ha a nyers payloadban a marker körül egyéb karakterek vagy csonkolt adatrészek maradnak.
+
 A dashboard így már nemcsak azt mutatja, hogy RFID hiba van, hanem azt is, hogy az ESP, valamelyik olvasó vagy a rakományegyezési folyamat a valószínű problémaforrás.
 
 ## Döntési mátrix
@@ -169,3 +193,5 @@ A dashboard így már nemcsak azt mutatja, hogy RFID hiba van, hanem azt is, hog
 A harmadik fejlesztési szakasz célja az RFID-alapú rakományellenőrzés diagnosztikai megbízhatóságának javítása volt. A kiindulási rendszerben az RFID ESP két MFRC522 olvasó segítségével beolvasta a tank- és raktároldali rakományazonosítókat, majd MQTT-n továbbította az olvasók működési állapotát és a rakományegyezés eredményét. A megoldás korlátja az volt, hogy az olvasók működőképességének megítélése főként eseményalapú üzenetekből történt, és nem állt rendelkezésre folyamatos heartbeat vagy frissességvizsgálat. Emiatt a backend nem tudta egyértelműen megkülönböztetni az RFID ESP kiesését, az olvasók meghibásodását és a valódi rakományeltérést.
 
 A fejlesztés során ezért az RFID ESP firmware-e periodikus heartbeat üzenetekkel és külön reader-státusz publikálással egészült ki. A DiagnoseService oldalon új RFID állapotmodell készült, amely eltárolja az utolsó heartbeat, az olvasóállapotok és a rakományolvasások időpontját. A diagnosztikai logika timeout alapján is képes hibát jelezni, tehát nemcsak explicit hibajelzés, hanem a friss állapotüzenetek hiánya esetén is felismeri az RFID kommunikációs problémát. A gyökérhiba-elemzésben az RFID kommunikációs hiba magasabb szintű okként szerepel, míg a rakományeltérés csak akkor jelenik meg önálló gyökérhibaként, ha az ESP és mindkét olvasó működőképes.
+
+A rakományazonosítók kiolvasásánál a rendszer `XXX<cargoId>XXX` marker alapú formátumot használ. Ez lehetővé teszi, hogy az ESP és a dashboard a nyers RFID memóriatartalomból csak a ténylegesen megjelenítendő rakományazonosítót emelje ki. A firmware a UTF-8 kódolású payloadok miatt több RFID oldalt olvas össze, így a rövidebb, ékezetes rakománynevek sem csonkolódnak a korábbi 16 bájtos olvasási határ miatt.
