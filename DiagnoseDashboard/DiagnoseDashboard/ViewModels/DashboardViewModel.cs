@@ -13,6 +13,7 @@ namespace DiagnoseDashboard.ViewModels
         private DiagnoseDashboardService diagnoseDashboardService;
 
         public RfidStatus RfidStatus => diagnoseDashboardService.CurrentRfidStatus;
+        public PhysicalSwitchSnapshot PhysicalSwitchStatus => diagnoseDashboardService.CurrentPhysicalSwitchStatus;
 
         public DashboardViewModel(DiagnoseDashboardService DiagnoseDashboardService)
         {
