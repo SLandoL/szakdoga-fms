@@ -100,6 +100,8 @@
 </body>
 
 @code {
+    private const string CargoDisplayMarker = "XXX";
+
     private readonly List<FaultButton> ProductionFaults = new List<FaultButton>
     {
         new FaultButton(FaultSearch.GyarSzalagSzenz.Name, "Szalag szenzorok"),
@@ -244,7 +246,32 @@
 
     private string FormatCargoId(string value)
     {
-        return string.IsNullOrWhiteSpace(value) ? "-" : value;
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return "-";
+        }
+
+        string trimmedValue = value.Trim('\0', ' ', '\r', '\n', '\t');
+        string markedValue = ExtractMarkedCargoValue(trimmedValue);
+        return string.IsNullOrWhiteSpace(markedValue) ? "-" : markedValue;
+    }
+
+    private string ExtractMarkedCargoValue(string value)
+    {
+        int startMarkerIndex = value.IndexOf(CargoDisplayMarker, StringComparison.Ordinal);
+        if (startMarkerIndex < 0)
+        {
+            return value;
+        }
+
+        int contentStartIndex = startMarkerIndex + CargoDisplayMarker.Length;
+        int endMarkerIndex = value.IndexOf(CargoDisplayMarker, contentStartIndex, StringComparison.Ordinal);
+        if (endMarkerIndex < 0 || endMarkerIndex <= contentStartIndex)
+        {
+            return value;
+        }
+
+        return value.Substring(contentStartIndex, endMarkerIndex - contentStartIndex).Trim();
     }
 
     private string FormatRelativeTime(DateTime value)
