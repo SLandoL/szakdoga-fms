@@ -28,6 +28,9 @@ namespace DiagnoseDashboard.Data
         [Get("/api/Diagnose/Dashboard/GetRfidStatus")]
         Task<RfidStatus> GetRfidStatus();
 
+        [Get("/api/Diagnose/Dashboard/GetPhysicalSwitchStatus")]
+        Task<PhysicalSwitchSnapshot> GetPhysicalSwitchStatus();
+
         [Post("/api/Diagnose/MQTTConnectionLost")]
         Task<bool> GetLostConnection();
 
