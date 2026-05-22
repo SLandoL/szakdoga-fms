@@ -61,11 +61,9 @@ namespace DiagnoseService.Controllers
 
             if (IsSwitchKnownAndDisabled(RfidTankPowerSwitchId) || IsSwitchKnownAndDisabled(RfidWarehousePowerSwitchId))
             {
+                // The switch layer may raise an RFID communication fault, but it must not clear
+                // a fault that was measured by heartbeat, reader timeout or reader status logic.
                 MQTTSubscriber.diagnose.KommRfidUp.Data = true;
-            }
-            else if (IsSwitchKnownAndEnabled(RfidTankPowerSwitchId) && IsSwitchKnownAndEnabled(RfidWarehousePowerSwitchId))
-            {
-                MQTTSubscriber.diagnose.KommRfidUp.Data = false;
             }
         }
 
