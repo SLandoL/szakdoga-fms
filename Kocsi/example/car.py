@@ -25,6 +25,14 @@ LOOP_DELAY_SECONDS = 0.0005
 HEARTBEAT_INTERVAL_SECONDS = 1.0
 FORCE_NEXT_STOP_FACTORY_EVENT = "ForceNextStopFactory"
 
+STEERING_CENTER = 90
+STEERING_MIN_ANGLE = 70
+STEERING_MAX_ANGLE = 110
+STEERING_STEP_A = 3
+STEERING_STEP_B = 9
+STEERING_STEP_C = 15
+STEERING_STEP_D = 20
+
 
 class States(Enum):
     Container = 1
@@ -46,12 +54,16 @@ carCanGoContainer = True
 carStop = False
 pausedByCommand = False
 deadLine = False
-StopContainer_to_Factory = True
-StopFactory_to_Container = True
+StopContainer_to_Factory = False
+StopFactory_to_Container = False
 color = "blue"
 lt_status_now = [0, 0, 0, 0, 0]
-turning_angle = 40
+turning_angle = STEERING_CENTER
 last_heartbeat_time = 0.0
+
+
+def clamp_steering_angle(angle):
+    return max(STEERING_MIN_ANGLE, min(STEERING_MAX_ANGLE, int(angle)))
 
 
 def on_connect(client, userdata, flags, rc):
@@ -87,11 +99,11 @@ def on_msg(client, userdata, msg):
 
 def handle_message(topic, payload):
     if topic == "StopRight":
-        update_extra_stop_flag("StopRight", payload, "Container_to_Factory")
+        update_extra_wait_flag("StopRight", payload, "Container_to_Factory")
         return
 
     if topic == "StopLeft":
-        update_extra_stop_flag("StopLeft", payload, "Factory_to_Container")
+        update_extra_wait_flag("StopLeft", payload, "Factory_to_Container")
         return
 
     if topic == "ResetPos":
@@ -117,7 +129,7 @@ def parse_bool_payload(payload, topic):
     return None
 
 
-def update_extra_stop_flag(topic, payload, route_name):
+def update_extra_wait_flag(topic, payload, route_name):
     global StopContainer_to_Factory
     global StopFactory_to_Container
 
@@ -125,17 +137,17 @@ def update_extra_stop_flag(topic, payload, route_name):
     if switch_active is None:
         return
 
-    extra_stop_enabled = not switch_active
+    extra_wait_enabled = switch_active
 
     if route_name == "Container_to_Factory":
-        StopContainer_to_Factory = extra_stop_enabled
+        StopContainer_to_Factory = extra_wait_enabled
     elif route_name == "Factory_to_Container":
-        StopFactory_to_Container = extra_stop_enabled
+        StopFactory_to_Container = extra_wait_enabled
     else:
-        print("Unknown extra stop route:", route_name)
+        print("Unknown extra wait route:", route_name)
         return
 
-    print(topic, "switch_active =", switch_active, "=>", route_name, "extra_stop_enabled =", extra_stop_enabled)
+    print(topic, "switch_active =", switch_active, "=>", route_name, "extra_wait_enabled =", extra_wait_enabled)
 
 
 def all_stations_ready():
@@ -310,7 +322,7 @@ def initialize_hardware():
     lf.references = REFERENCES
     fw.ready()
     bw.ready()
-    fw.turning_max = 45
+    fw.turning_max = 30
     state = States.Factory_to_Container
     print("PiCar hardware initialized")
 
@@ -368,10 +380,6 @@ def main():
     global state
 
     bw.speed = int(FORWARD_SPEED * carSpeed)
-    a_step = 3
-    b_step = 17
-    c_step = 27
-    d_step = 37
     bw.forward()
 
     while True:
@@ -382,23 +390,27 @@ def main():
         if lt_status_now == [0, 0, 1, 0, 0]:
             step = 0
         elif lt_status_now == [0, 1, 1, 0, 0] or lt_status_now == [0, 0, 1, 1, 0]:
-            step = a_step
+            step = STEERING_STEP_A
         elif lt_status_now == [0, 1, 0, 0, 0] or lt_status_now == [0, 0, 0, 1, 0]:
-            step = b_step
+            step = STEERING_STEP_B
         elif lt_status_now == [1, 1, 0, 0, 0] or lt_status_now == [0, 0, 0, 1, 1]:
-            step = c_step
+            step = STEERING_STEP_C
         elif lt_status_now == [1, 0, 0, 0, 0] or lt_status_now == [0, 0, 0, 0, 1]:
-            step = d_step
+            step = STEERING_STEP_D
         elif lt_status_now == [1, 1, 1, 1, 1] and deadLine is False:
             handle_stop_marker()
+            step = 0
+        else:
+            step = 0
 
         if lt_status_now == [0, 0, 1, 0, 0]:
-            fw.turn(90)
+            turning_angle = STEERING_CENTER
         elif lt_status_now in ([0, 1, 1, 0, 0], [0, 1, 0, 0, 0], [1, 1, 0, 0, 0], [1, 0, 0, 0, 0]):
-            turning_angle = int(90 - step)
+            turning_angle = STEERING_CENTER - step
         elif lt_status_now in ([0, 0, 1, 1, 0], [0, 0, 0, 1, 0], [0, 0, 0, 1, 1], [0, 0, 0, 0, 1]):
-            turning_angle = int(90 + step)
+            turning_angle = STEERING_CENTER + step
 
+        turning_angle = clamp_steering_angle(turning_angle)
         fw.turn(turning_angle)
         time.sleep(LOOP_DELAY_SECONDS)
         publish_heartbeat_if_due()
@@ -432,10 +444,10 @@ def handle_stop_marker():
 
     if state == States.Container_to_Factory:
         if StopContainer_to_Factory:
-            print("Container-to-factory extra stop enabled")
+            print("Container-to-factory intermediate wait enabled")
             wait_with_heartbeat(5.0)
         else:
-            print("Container-to-factory extra stop disabled")
+            print("Container-to-factory intermediate wait skipped")
         restart_after_intermediate_stop()
         state = States.Factory
         return
@@ -450,10 +462,10 @@ def handle_stop_marker():
 
     if state == States.Factory_to_Container:
         if StopFactory_to_Container:
-            print("Factory-to-container extra stop enabled")
+            print("Factory-to-container intermediate wait enabled")
             wait_with_heartbeat(5.0)
         else:
-            print("Factory-to-container extra stop disabled")
+            print("Factory-to-container intermediate wait skipped")
         restart_after_intermediate_stop()
         state = States.Container
 
