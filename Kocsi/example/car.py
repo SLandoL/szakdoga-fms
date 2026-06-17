@@ -1,10 +1,6 @@
 #!/usr/bin/env python
 """
 PiCar line follower and MQTT route controller.
-
-The physical StopLeft, StopRight and ResetPos switches are published by the
-existing tank ESP. ResetPos is handled as an edge-triggered debug event: every
-received switch transition makes the factory the next logical stop.
 """
 
 import time
@@ -37,8 +33,6 @@ class States(Enum):
     Factory_to_Container = 4
 
 
-# Runtime state. Hardware and MQTT objects are initialized before the MQTT
-# network loop starts, preventing callbacks from accessing missing objects.
 c = None
 fw = None
 bw = None
@@ -50,6 +44,7 @@ carCanGoTank = True
 carCanGoBottle = True
 carCanGoContainer = True
 carStop = False
+pausedByCommand = False
 deadLine = False
 StopContainer_to_Factory = True
 StopFactory_to_Container = True
@@ -75,7 +70,6 @@ def on_disconnect(client, userdata, rc):
 
 
 def on_msg(client, userdata, msg):
-    """Protect the Paho network thread from handler and payload errors."""
     try:
         payload = msg.payload.decode("utf-8").strip()
 
@@ -92,26 +86,15 @@ def on_msg(client, userdata, msg):
 
 
 def handle_message(topic, payload):
-    global StopContainer_to_Factory
-    global StopFactory_to_Container
-
     if topic == "StopRight":
-        value = parse_bool_payload(payload, topic)
-        if value is not None:
-            StopContainer_to_Factory = value
-            print("StopContainer_to_Factory =", value)
+        update_extra_stop_flag("StopRight", payload, "Container_to_Factory")
         return
 
     if topic == "StopLeft":
-        value = parse_bool_payload(payload, topic)
-        if value is not None:
-            StopFactory_to_Container = value
-            print("StopFactory_to_Container =", value)
+        update_extra_stop_flag("StopLeft", payload, "Factory_to_Container")
         return
 
     if topic == "ResetPos":
-        # The tank ESP publishes ResetPos only when the physical input changes.
-        # Both edges therefore mean the same one-shot debug event.
         value = parse_bool_payload(payload, topic)
         if value is not None:
             force_next_stop_factory()
@@ -134,11 +117,64 @@ def parse_bool_payload(payload, topic):
     return None
 
 
+def update_extra_stop_flag(topic, payload, route_name):
+    global StopContainer_to_Factory
+    global StopFactory_to_Container
+
+    switch_active = parse_bool_payload(payload, topic)
+    if switch_active is None:
+        return
+
+    extra_stop_enabled = not switch_active
+
+    if route_name == "Container_to_Factory":
+        StopContainer_to_Factory = extra_stop_enabled
+    elif route_name == "Factory_to_Container":
+        StopFactory_to_Container = extra_stop_enabled
+    else:
+        print("Unknown extra stop route:", route_name)
+        return
+
+    print(topic, "switch_active =", switch_active, "=>", route_name, "extra_stop_enabled =", extra_stop_enabled)
+
+
+def all_stations_ready():
+    return carCanGoTank and carCanGoBottle and carCanGoContainer
+
+
+def resume_after_manual_pause(source):
+    global pausedByCommand
+    global carStop
+
+    if not pausedByCommand:
+        print(source + ": no manual pause was active")
+        return
+
+    pausedByCommand = False
+
+    if carStop or not all_stations_ready():
+        print(
+            source + ": pause cleared, waiting state preserved;",
+            "carStop =", carStop,
+            "tank =", carCanGoTank,
+            "bottle =", carCanGoBottle,
+            "container =", carCanGoContainer,
+        )
+        return
+
+    c.publish("car-esp", "start")
+    bw.speed = int(100 * carSpeed)
+    bw.forward()
+    carStop = False
+    print(source + ": car resumed")
+
+
 def handle_car_management(payload):
     global carSpeed
     global color
     global carCanGoContainer
     global carStop
+    global pausedByCommand
     global deadLine
     global lt_status_now
 
@@ -153,13 +189,11 @@ def handle_car_management(payload):
         if len(parts) < 2:
             print("Invalid carSpeed command:", repr(payload))
             return
-
         try:
             speed_percent = int(parts[1])
         except ValueError:
             print("Invalid carSpeed value:", repr(parts[1]))
             return
-
         speed_percent = max(0, min(100, speed_percent))
         carSpeed = speed_percent / 100.0
         bw.speed = speed_percent
@@ -170,33 +204,23 @@ def handle_car_management(payload):
         if len(parts) < 2 or parts[1] not in ("True", "False"):
             print("Invalid Paused command:", repr(payload))
             return
-
-        paused = parts[1] == "True"
-        if paused:
+        if parts[1] == "True":
+            pausedByCommand = True
             c.publish("car-esp", "stop")
             bw.speed = 0
-            print("The car is paused.")
+            print("The car is paused by command.")
         else:
-            c.publish("car-esp", "start")
-            bw.speed = int(100 * carSpeed)
-            bw.forward()
-            carStop = False
-            print("The car is unpaused and forward drive was re-enabled.")
+            resume_after_manual_pause("Paused,False")
         return
 
     if command == "WakeUp":
-        c.publish("car-esp", "start")
-        bw.speed = int(100 * carSpeed)
-        bw.forward()
-        carStop = False
-        print("Wake up command processed; forward drive was re-enabled.")
+        resume_after_manual_pause("WakeUp")
         return
 
     if command == "carLedColor":
         if len(parts) < 2 or not parts[1]:
             print("Invalid carLedColor command:", repr(payload))
             return
-
         color = parts[1]
         print("The car's LED color is:", color)
         return
@@ -216,11 +240,10 @@ def handle_car_management(payload):
         carCanGoContainer = True
         carStop = False
         c.publish("CarLocation", "onTheWayToFactory")
-
         lt_status_now = lf.read_digital()
-        deadLine = lt_status_now == [1, 1, 1, 1, 1]
-
-        print("CarGOContainer received; restarting toward factory with forward drive")
+        if lt_status_now == [1, 1, 1, 1, 1]:
+            deadLine = True
+        print("CarGOContainer received; restarting toward factory")
         return
 
     print("Unhandled carManagement command:", repr(payload))
@@ -228,7 +251,6 @@ def handle_car_management(payload):
 
 def handle_tank_ready():
     global carCanGoTank
-
     print("CarGOTank received")
     carCanGoTank = True
     print_ready_flags()
@@ -237,7 +259,6 @@ def handle_tank_ready():
 
 def handle_bottle_ready():
     global carCanGoBottle
-
     print("CarGOBottle received")
     carCanGoBottle = True
     print_ready_flags()
@@ -245,11 +266,7 @@ def handle_bottle_ready():
 
 
 def print_ready_flags():
-    print(
-        "Flags:",
-        "tank =", carCanGoTank,
-        "bottle =", carCanGoBottle,
-    )
+    print("Flags:", "tank =", carCanGoTank, "bottle =", carCanGoBottle, "container =", carCanGoContainer)
 
 
 def try_continue_to_container():
@@ -258,31 +275,23 @@ def try_continue_to_container():
     global lt_status_now
 
     if not (carCanGoTank and carCanGoBottle):
-        print(
-            "Still waiting:",
-            "tank =", carCanGoTank,
-            "bottle =", carCanGoBottle,
-        )
+        print("Still waiting:", "tank =", carCanGoTank, "bottle =", carCanGoBottle)
         return
 
     print("Both stations ready, restarting car")
     result = c.publish("car-esp", "start")
     print("Publishing car-esp start, rc =", result.rc)
-
     bw.speed = int(100 * carSpeed)
     bw.forward()
     c.publish("CarLocation", "onTheWayToContainer")
-
     lt_status_now = lf.read_digital()
-    deadLine = lt_status_now == [1, 1, 1, 1, 1]
+    if lt_status_now == [1, 1, 1, 1, 1]:
+        deadLine = True
     carStop = False
 
 
 def force_next_stop_factory():
     global state
-
-    # In the existing state machine, States.Container means that the next full
-    # stop marker is processed as the factory stop.
     state = States.Container
     c.publish("CarLocation", "onTheWayToFactory")
     print("Debug switch event: next stop forced to factory")
@@ -295,39 +304,26 @@ def initialize_hardware():
     global state
 
     picar.setup()
-
-    fw = front_wheels.Front_Wheels(
-        db="/home/pi/SunFounder_PiCar-S/example/config"
-    )
-    bw = back_wheels.Back_Wheels(
-        db="/home/pi/SunFounder_PiCar-S/example/config"
-    )
+    fw = front_wheels.Front_Wheels(db="/home/pi/SunFounder_PiCar-S/example/config")
+    bw = back_wheels.Back_Wheels(db="/home/pi/SunFounder_PiCar-S/example/config")
     lf = Line_Follower.Line_Follower()
-
     lf.references = REFERENCES
     fw.ready()
     bw.ready()
     fw.turning_max = 45
     state = States.Factory_to_Container
-
     print("PiCar hardware initialized")
 
 
 def connect_mqtt():
     global c
-
     c = mqtt.Client()
     c.on_connect = on_connect
     c.on_message = on_msg
     c.on_disconnect = on_disconnect
-
     while True:
         try:
-            c.connect(
-                MQTT_BROKER,
-                MQTT_PORT,
-                keepalive=MQTT_KEEPALIVE_SECONDS,
-            )
+            c.connect(MQTT_BROKER, MQTT_PORT, keepalive=MQTT_KEEPALIVE_SECONDS)
             c.loop_start()
             return
         except Exception as ex:
@@ -337,26 +333,21 @@ def connect_mqtt():
 
 def publish_heartbeat_if_due():
     global last_heartbeat_time
-
     now = time.monotonic()
     if now - last_heartbeat_time < HEARTBEAT_INTERVAL_SECONDS:
         return
-
     result = c.publish("MQTTState", "ONLINE")
     if result.rc != mqtt.MQTT_ERR_SUCCESS:
         print("Heartbeat publish failed, rc =", result.rc)
-
     last_heartbeat_time = now
 
 
 def wait_with_heartbeat(duration_seconds):
     end_time = time.monotonic() + duration_seconds
-
     while True:
         remaining = end_time - time.monotonic()
         if remaining <= 0:
             return
-
         publish_heartbeat_if_due()
         time.sleep(min(0.1, remaining))
 
@@ -377,48 +368,35 @@ def main():
     global state
 
     bw.speed = int(FORWARD_SPEED * carSpeed)
-
     a_step = 3
     b_step = 17
     c_step = 27
     d_step = 37
-
     bw.forward()
 
     while True:
         lt_status_now = lf.read_digital()
-
         if deadLine and lt_status_now != [1, 1, 1, 1, 1]:
             deadLine = False
 
         if lt_status_now == [0, 0, 1, 0, 0]:
             step = 0
-        elif lt_status_now in ([0, 1, 1, 0, 0], [0, 0, 1, 1, 0]):
+        elif lt_status_now == [0, 1, 1, 0, 0] or lt_status_now == [0, 0, 1, 1, 0]:
             step = a_step
-        elif lt_status_now in ([0, 1, 0, 0, 0], [0, 0, 0, 1, 0]):
+        elif lt_status_now == [0, 1, 0, 0, 0] or lt_status_now == [0, 0, 0, 1, 0]:
             step = b_step
-        elif lt_status_now in ([1, 1, 0, 0, 0], [0, 0, 0, 1, 1]):
+        elif lt_status_now == [1, 1, 0, 0, 0] or lt_status_now == [0, 0, 0, 1, 1]:
             step = c_step
-        elif lt_status_now in ([1, 0, 0, 0, 0], [0, 0, 0, 0, 1]):
+        elif lt_status_now == [1, 0, 0, 0, 0] or lt_status_now == [0, 0, 0, 0, 1]:
             step = d_step
-        elif lt_status_now == [1, 1, 1, 1, 1] and not deadLine:
+        elif lt_status_now == [1, 1, 1, 1, 1] and deadLine is False:
             handle_stop_marker()
 
         if lt_status_now == [0, 0, 1, 0, 0]:
             fw.turn(90)
-        elif lt_status_now in (
-            [0, 1, 1, 0, 0],
-            [0, 1, 0, 0, 0],
-            [1, 1, 0, 0, 0],
-            [1, 0, 0, 0, 0],
-        ):
+        elif lt_status_now in ([0, 1, 1, 0, 0], [0, 1, 0, 0, 0], [1, 1, 0, 0, 0], [1, 0, 0, 0, 0]):
             turning_angle = int(90 - step)
-        elif lt_status_now in (
-            [0, 0, 1, 1, 0],
-            [0, 0, 0, 1, 0],
-            [0, 0, 0, 1, 1],
-            [0, 0, 0, 0, 1],
-        ):
+        elif lt_status_now in ([0, 0, 1, 1, 0], [0, 0, 0, 1, 0], [0, 0, 0, 1, 1], [0, 0, 0, 0, 1]):
             turning_angle = int(90 + step)
 
         fw.turn(turning_angle)
@@ -431,12 +409,10 @@ def handle_stop_marker():
     global carCanGoBottle
     global carCanGoContainer
     global carStop
-    global deadLine
     global state
 
     bw.speed = 0
     carStop = True
-    deadLine = True
 
     if not (carCanGoBottle and carCanGoTank and carCanGoContainer):
         print_ready_flags()
@@ -458,7 +434,8 @@ def handle_stop_marker():
         if StopContainer_to_Factory:
             print("Container-to-factory extra stop enabled")
             wait_with_heartbeat(5.0)
-
+        else:
+            print("Container-to-factory extra stop disabled")
         restart_after_intermediate_stop()
         state = States.Factory
         return
@@ -475,14 +452,14 @@ def handle_stop_marker():
         if StopFactory_to_Container:
             print("Factory-to-container extra stop enabled")
             wait_with_heartbeat(5.0)
-
+        else:
+            print("Factory-to-container extra stop disabled")
         restart_after_intermediate_stop()
         state = States.Container
 
 
 def restart_after_intermediate_stop():
     global carStop
-
     bw.speed = int(100 * carSpeed)
     bw.forward()
     time.sleep(0.2)
@@ -491,12 +468,8 @@ def restart_after_intermediate_stop():
 
 def cali():
     references = [0, 0, 0, 0, 0]
-    print(
-        "cali for module:\n"
-        "  first put all sensors on white, then put all sensors on black"
-    )
+    print("cali for module:\n  first put all sensors on white, then put all sensors on black")
     mount = 100
-
     fw.turn(70)
     print("\n cali white")
     time.sleep(4)
@@ -508,7 +481,6 @@ def cali():
     time.sleep(0.5)
     fw.turn(90)
     time.sleep(1)
-
     fw.turn(110)
     print("\n cali black")
     time.sleep(4)
@@ -520,10 +492,8 @@ def cali():
     time.sleep(0.5)
     fw.turn(90)
     time.sleep(1)
-
     for i in range(5):
         references[i] = (white_references[i] + black_references[i]) / 2
-
     lf.references = references
     print("Middle references =", references)
     time.sleep(1)
@@ -539,7 +509,6 @@ def destroy():
 def shutdown_mqtt():
     if c is None:
         return
-
     try:
         c.loop_stop()
         c.disconnect()
