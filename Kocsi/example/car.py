@@ -179,15 +179,17 @@ def handle_car_management(payload):
         else:
             c.publish("car-esp", "start")
             bw.speed = int(100 * carSpeed)
+            bw.forward()
             carStop = False
-            print("The car is unpaused.")
+            print("The car is unpaused and forward drive was re-enabled.")
         return
 
     if command == "WakeUp":
         c.publish("car-esp", "start")
         bw.speed = int(100 * carSpeed)
+        bw.forward()
         carStop = False
-        print("Wake up command processed.")
+        print("Wake up command processed; forward drive was re-enabled.")
         return
 
     if command == "carLedColor":
@@ -210,6 +212,7 @@ def handle_car_management(payload):
     if command == "CarGOContainer":
         c.publish("car-esp", "start")
         bw.speed = int(100 * carSpeed)
+        bw.forward()
         carCanGoContainer = True
         carStop = False
         c.publish("CarLocation", "onTheWayToFactory")
@@ -217,7 +220,7 @@ def handle_car_management(payload):
         lt_status_now = lf.read_digital()
         deadLine = lt_status_now == [1, 1, 1, 1, 1]
 
-        print("CarGOContainer received; restarting toward factory")
+        print("CarGOContainer received; restarting toward factory with forward drive")
         return
 
     print("Unhandled carManagement command:", repr(payload))
@@ -267,6 +270,7 @@ def try_continue_to_container():
     print("Publishing car-esp start, rc =", result.rc)
 
     bw.speed = int(100 * carSpeed)
+    bw.forward()
     c.publish("CarLocation", "onTheWayToContainer")
 
     lt_status_now = lf.read_digital()
