@@ -2,7 +2,9 @@
 
 Ipari hibamenedzsment-demonstráció gyártósor-szimulációval, MQTT-kommunikációval, fizikai eszközökkel és gyökérhiba-elemző dashboarddal.
 
-![Architektúra](https://user-images.githubusercontent.com/71183148/155537163-4fdb146e-98ce-4be3-a1d3-f378f6f70efb.PNG)
+![Fizikai felépítés – palackozóüzem-makett hibamenedzsment rendszere](docs/assets/fizikai-felepites.svg)
+
+![Szoftverarchitektúra – modulok és kommunikáció](docs/assets/szoftverarchitektura.svg)
 
 ## Demonstrátori útmutató
 
@@ -52,7 +54,7 @@ A demó fő üzenete:
 | Wi-Fi konfiguráció | Felhasználó: `Administrator` | `kiskacsa` |
 | Demo PC | LAN IP: `192.168.0.2` | PC-jelszó: `kiskacsa` |
 | MQTT broker | `192.168.0.100:1883` | Nincs dokumentált MQTT-felhasználó vagy MQTT-jelszó |
-| Kocsi Raspberry Pi | `ssh pi@192.168.0.90` | Az SSH-jelszó nincs dokumentálva a repóban; ne feltételezz alapértelmezett jelszót |
+| Kocsi Raspberry Pi | `ssh pi@192.168.0.90` | SSH-jelszó: `kiskacsa` |
 | ESP-k | USB-s soros kapcsolat, Arduino IDE / Serial Monitor | Soros sebesség jellemzően `115200 baud` |
 
 ### Webes felületek
