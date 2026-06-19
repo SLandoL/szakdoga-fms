@@ -32,6 +32,11 @@ IPAddress subnet(255, 255, 255, 0);
 WiFiClient espClient;
 PubSubClient client(espClient);
 
+// Kapcsoló tábla pinek
+const uint8_t STOP_LEFT_PIN = 0;   // GPIO0 -> D3
+const uint8_t STOP_RIGHT_PIN = 2;  // GPIO2 -> D4
+const uint8_t RESET_POS_PIN = 14;  // GPIO14 -> D5
+
 // Gombok változói
 unsigned long StopLeft_button_time = 0;
 unsigned long StopLeft_last_button_time = 0;
@@ -88,13 +93,13 @@ void setup() {
   FillTankAtStart(CRGB::Blue);
 
   // Kapcsoló tábla pinek:
-  pinMode(0, INPUT_PULLUP);   // GPIO0 -> D3
-  pinMode(14, INPUT_PULLUP);  // GPIO14 -> D5
-  pinMode(12, INPUT_PULLUP);  // GPIO12 -> D6
+  pinMode(STOP_LEFT_PIN, INPUT_PULLUP);
+  pinMode(STOP_RIGHT_PIN, INPUT_PULLUP);
+  pinMode(RESET_POS_PIN, INPUT_PULLUP);
 
-  StopLeft_lastState = digitalRead(0);
-  StopRight_lastState = digitalRead(12);
-  ResetPos_lastState = digitalRead(14);
+  StopLeft_lastState = digitalRead(STOP_LEFT_PIN);
+  StopRight_lastState = digitalRead(STOP_RIGHT_PIN);
+  ResetPos_lastState = digitalRead(RESET_POS_PIN);
 }
 
 void loop() {
@@ -113,11 +118,11 @@ void loop() {
   }
   // -------------------------------------------
 
-  // Gomb kezelés - StopLeft (GPIO0)
-  if (digitalRead(0) != StopLeft_lastState) {
+  // Gomb kezelés - StopLeft (GPIO0 / D3)
+  if (digitalRead(STOP_LEFT_PIN) != StopLeft_lastState) {
     StopLeft_button_time = millis();
     if (StopLeft_button_time - StopLeft_last_button_time > debouncetime) {
-      if (digitalRead(0) == 1) { // Pullup miatt fordított logika lehet, de hagytam az eredetit
+      if (digitalRead(STOP_LEFT_PIN) == 1) { // Pullup miatt fordított logika lehet, de hagytam az eredetit
         Serial.println("GPIO0 BEKAPCS+++++++++++++");
         client.publish("StopRight", "True");
       } else {
@@ -129,15 +134,15 @@ void loop() {
     }
   }
 
-  // Gomb kezelés - StopRight (GPIO12)
-  if (digitalRead(12) != StopRight_lastState) {
+  // Gomb kezelés - StopRight (GPIO2 / D4)
+  if (digitalRead(STOP_RIGHT_PIN) != StopRight_lastState) {
     StopRight_button_time = millis();
     if (StopRight_button_time - StopRight_last_button_time > debouncetime) {
-      if (digitalRead(12) == 0) {
-        Serial.println("GPIO12 BEKAPCS+++++++++++++");
+      if (digitalRead(STOP_RIGHT_PIN) == 0) {
+        Serial.println("GPIO2 BEKAPCS+++++++++++++");
         client.publish("StopLeft", "True");
       } else {
-        Serial.println("GPIO12 KIKAPCS-------------");
+        Serial.println("GPIO2 KIKAPCS-------------");
         client.publish("StopLeft", "False");
       }
       StopRight_lastState = !StopRight_lastState;
@@ -145,11 +150,11 @@ void loop() {
     }
   }
 
-  // Gomb kezelés - ResetPos (GPIO14)
-  if (digitalRead(14) != ResetPos_lastState) {
+  // Gomb kezelés - ResetPos (GPIO14 / D5)
+  if (digitalRead(RESET_POS_PIN) != ResetPos_lastState) {
     ResetPos_button_time = millis();
     if (ResetPos_button_time - ResetPos_last_button_time > debouncetime) {
-      if (digitalRead(14) == 0) {
+      if (digitalRead(RESET_POS_PIN) == 0) {
         Serial.println("GPIO14 BEKAPCS+++++++++++++");
         client.publish("ResetPos", "True");
       } else {
