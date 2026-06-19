@@ -2,9 +2,9 @@
 
 Ipari hibamenedzsment-demonstráció gyártósor-szimulációval, MQTT-kommunikációval, fizikai eszközökkel és gyökérhiba-elemző dashboarddal.
 
-![Fizikai felépítés – palackozóüzem-makett hibamenedzsment rendszere](docs/assets/kep(1).png)
+![Fizikai felépítés – palackozóüzem-makett hibamenedzsment rendszere](docs/assets/kep1.png)
 
-![Szoftverarchitektúra – modulok és kommunikáció](docs/assets/kep(2).png)
+![Szoftverarchitektúra – modulok és kommunikáció](docs/assets/kep2.png)
 
 ## Demonstrátori útmutató
 
