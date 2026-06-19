@@ -109,13 +109,21 @@ namespace DiagnoseDashboard.Data
             bool mqttIsConnected = await GetMqttStatus();
             ResetFaultStatuses();
 
-            if (AnalyseSystemCommunication())
+            bool systemCommunicationFault = AnalyseSystemCommunication();
+            bool centerCommunicationFault = false;
+
+            if (!systemCommunicationFault)
             {
-                return;
+                centerCommunicationFault = AnalyseMqttCenter(mqttIsConnected);
             }
 
-            if (AnalyseMqttCenter(mqttIsConnected))
+            // Ha felsőbb szintű kommunikációs hiba aktív, az eszközállapot-lekérdezések
+            // nem feltétlenül megbízhatóak. A közvetlenül beérkezett diagnózisbemeneteket
+            // viszont ekkor is meg kell őrizni FAULT állapotként, különben az RCA tévesen
+            // CONSEQUENCE-ként jelenítené meg a ténylegesen mért alsóbb hibákat.
+            if (systemCommunicationFault || centerCommunicationFault)
             {
+                PreserveMeasuredDiagnoseInputs();
                 return;
             }
 
@@ -124,6 +132,11 @@ namespace DiagnoseDashboard.Data
 
             AnalyseRfid();
             AnalyseRemainingDiagnoses(carOnline, tankOnline);
+
+            // Utolsó védőlépés: minden explicit mért diagnózisbemenet maradjon FAULT.
+            // Így a hierarchikus propagation csak a valóban nem mért gyermekhibákat
+            // állíthatja CONSEQUENCE állapotba.
+            PreserveMeasuredDiagnoseInputs();
         }
 
         private bool AnalyseSystemCommunication()
@@ -161,7 +174,8 @@ namespace DiagnoseDashboard.Data
         {
             // A kocsi alatti ESP csak akkor számít külön mért hibának, ha maga a kocsi online.
             // Ha a kocsi offline, akkor a gyerek állapota nem megbízható, ezért azt az RCA
-            // CONSEQUENCE-ként származtatja a KommKocsi hibából.
+            // CONSEQUENCE-ként származtatja a KommKocsi hibából, kivéve ha az adott gyereknek
+            // közvetlen diagnózisbemenete is hibát jelez.
             string carstateTemp = await dashboardData.GetCarState();
             bool carOnline = IsOnlineState(carstateTemp);
 
@@ -199,7 +213,8 @@ namespace DiagnoseDashboard.Data
         private async Task<bool> AnalyseTank()
         {
             // A tartály alatti hibákat is csak akkor vesszük külön mért hibának, ha maga a
-            // tartálykommunikáció működik. Offline tartálynál ezek következményként jelennek meg.
+            // tartálykommunikáció működik. Offline tartálynál ezek következményként jelennek meg,
+            // kivéve ha az adott gyerekhez közvetlen diagnózisbemenet is hibát jelez.
             string tankStateTemp = await dashboardData.GetTankState();
             bool tankOnline = IsOnlineState(tankStateTemp);
 
@@ -223,21 +238,25 @@ namespace DiagnoseDashboard.Data
         private void AnalyseRfid()
         {
             // Két fő hibaforrás: kommunikációs hiba és olvasási/rakományegyezési hiba.
-            // A GyarRfidOlv csak akkor mért hiba, ha az RFID kommunikáció működik, de a rakomány nem egyezik.
-            // Ha az RFID ESP, heartbeat vagy valamelyik reader nem megbízható, a GyarRfidOlv CONSEQUENCE lesz a KommRfidUp alatt.
-            if (diagnoses.KommRfidUp.Data)
+            // Ha mindkettő ténylegesen beérkezik mért hibaként, akkor a GyarRfidOlv FAULT marad,
+            // de az RCA miatt nem lesz külön ROOTFAULT a KommRfidUp alatt.
+            bool rfidCommunicationFault = diagnoses.KommRfidUp.Data;
+            bool rfidReadingFault = diagnoses.GyarRfidOlv.Data;
+
+            if (rfidCommunicationFault)
             {
                 MarkFault(FaultSearch.KommRfidUp.Name);
-                return;
+            }
+            else
+            {
+                MarkWorking(FaultSearch.KommRfidUp.Name);
             }
 
-            MarkWorking(FaultSearch.KommRfidUp.Name);
-
-            if (diagnoses.GyarRfidOlv.Data)
+            if (rfidReadingFault)
             {
                 MarkFault(FaultSearch.GyarRfidOlv.Name);
             }
-            else
+            else if (!rfidCommunicationFault)
             {
                 MarkWorking(FaultSearch.GyarRfidOlv.Name);
             }
@@ -247,7 +266,8 @@ namespace DiagnoseDashboard.Data
         {
             // Minden olyan hiba, amit manuálisan nem fedtünk le fentebb. Itt már nincs
             // hierarchikus terjesztés: csak az adott diagnosztikai bemenet saját állapotát írjuk.
-            // Az offline szülő alatti gyermekeket szándékosan kihagyjuk, hogy az RCA CONSEQUENCE-ként jelölje őket.
+            // Ha egy offline szülő alatti gyereknek nincs saját hibajele, az RCA CONSEQUENCE-ként jelöli.
+            // Ha van saját hibajele, akkor FAULT marad, nem írhatja felül a következményterjesztés.
             foreach (PropertyInfo prop in
                     typeof(Diagnoses)
                     .GetProperties()
@@ -255,7 +275,7 @@ namespace DiagnoseDashboard.Data
             {
                 DiagnoseData currentDiagnose = (DiagnoseData)prop.GetValue(diagnoses, null);
 
-                if (ShouldSkipGenericDiagnose(currentDiagnose.Name, carOnline, tankOnline))
+                if (currentDiagnose == null || ShouldSkipGenericDiagnose(currentDiagnose.Name))
                 {
                     continue;
                 }
@@ -267,38 +287,37 @@ namespace DiagnoseDashboard.Data
             }
         }
 
-        private bool ShouldSkipGenericDiagnose(string diagnoseName, bool carOnline, bool tankOnline)
+        private void PreserveMeasuredDiagnoseInputs()
         {
-            if (diagnoseName == FaultSearch.KommRendszer.Name ||
-                diagnoseName == FaultSearch.KommKozpont.Name ||
-                diagnoseName == FaultSearch.KommKozpontUp.Name ||
-                diagnoseName == FaultSearch.KommKocsi.Name ||
-                diagnoseName == FaultSearch.KommKocsiEsp.Name ||
-                diagnoseName == FaultSearch.KommTartaly.Name ||
-                diagnoseName == FaultSearch.KommRfidUp.Name ||
-                diagnoseName == FaultSearch.GyarRfidOlv.Name)
+            foreach (PropertyInfo prop in
+                    typeof(Diagnoses)
+                    .GetProperties()
+                    .Where(p => p.PropertyType == typeof(DiagnoseData)))
             {
-                return true;
-            }
+                DiagnoseData currentDiagnose = (DiagnoseData)prop.GetValue(diagnoses, null);
 
-            if (!carOnline &&
-                (diagnoseName == FaultSearch.GyarTargoncaSzenz.Name ||
-                 diagnoseName == FaultSearch.AramKocsi.Name ||
-                 diagnoseName == FaultSearch.KommTargoncaArammero.Name))
-            {
-                return true;
-            }
+                if (currentDiagnose == null || string.IsNullOrWhiteSpace(currentDiagnose.Name))
+                {
+                    continue;
+                }
 
-            if (!tankOnline &&
-                (diagnoseName == FaultSearch.AramTartaly.Name ||
-                 diagnoseName == FaultSearch.GyarSzalagSzenz.Name ||
-                 diagnoseName == FaultSearch.GyarTartalySzenz.Name ||
-                 diagnoseName == FaultSearch.KommTartalyArammero.Name))
-            {
-                return true;
+                if (currentDiagnose.Data)
+                {
+                    MarkFault(currentDiagnose.Name);
+                }
             }
+        }
 
-            return false;
+        private bool ShouldSkipGenericDiagnose(string diagnoseName)
+        {
+            return diagnoseName == FaultSearch.KommRendszer.Name ||
+                   diagnoseName == FaultSearch.KommKozpont.Name ||
+                   diagnoseName == FaultSearch.KommKozpontUp.Name ||
+                   diagnoseName == FaultSearch.KommKocsi.Name ||
+                   diagnoseName == FaultSearch.KommKocsiEsp.Name ||
+                   diagnoseName == FaultSearch.KommTartaly.Name ||
+                   diagnoseName == FaultSearch.KommRfidUp.Name ||
+                   diagnoseName == FaultSearch.GyarRfidOlv.Name;
         }
 
         public async Task<bool> GetMqttStatus()

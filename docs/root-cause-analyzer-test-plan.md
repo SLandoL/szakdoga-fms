@@ -4,7 +4,7 @@ A tesztek celja annak ellenorzese, hogy az uj gyokerhiba-elemzo logika nem puszt
 
 Az aktualis verzio tenyleges hierarchikus propagation-t vegez. A propagation nem `FAULT` allapotot ir a gyermekhibakra, hanem kulon `CONSEQUENCE` allapotot hasznal. Igy a rendszer meg tudja kulonboztetni a kozvetlenul mert hibat a magasabb szintu hiba miatt erintett, bizonytalan vagy kovetkezmenykent jelentkezo komponensektol.
 
-Fontos kulonbseg: az analyzer-szintu tesztek kozvetlenul a `RootCauseAnalyzer` osztalyt vizsgaljak tetszolegesen osszeallitott `FaultData` listaval. A service-integracios tesztek a teljes `DiagnoseDashboardService` folyamatot vizsgaljak, ahol magasabb szintu kommunikacios hiba eseten a service koran visszaterhet, ezert az also szintu jelek nem mindig kerulnek kulon mert hibakent feldolgozasra.
+Fontos kulonbseg: az analyzer-szintu tesztek kozvetlenul a `RootCauseAnalyzer` osztalyt vizsgaljak tetszolegesen osszeallitott `FaultData` listaval. A service-integracios tesztek a teljes `DiagnoseDashboardService` folyamatot vizsgaljak. A service magasabb szintu kommunikacios hiba eseten tovabbra sem vegez minden also szintu eszkozallapot-lekerdezest, de a kozvetlenul bejovo `DiagnoseData.Data == true` bemeneteket ekkor is meg kell oriznie `FAULT` allapotkent.
 
 ## 1. RootCauseAnalyzer egsegtesztek / logikai tesztek
 
@@ -28,15 +28,18 @@ Fontos kulonbseg: az analyzer-szintu tesztek kozvetlenul a `RootCauseAnalyzer` o
 | Azonosito | Rendszerszintu bemenet | Elvart eredmeny | Megjegyzes |
 |---|---|---|---|
 | RCA-S1 | Kocsi es tartaly heartbeat `ONLINE` | `KommKocsi = WORKING`, `KommTartaly = WORKING` | Nem jelenhet meg hamis hiba aktiv eszkozon |
-| RCA-S2 | Kocsi heartbeat elmarad, bottle ESP is offline | `KommKocsi = ROOTFAULT`, `KommKocsiEsp = CONSEQUENCE` | A gyerek ESP-t nem merjuk kulon, ha a kocsi szulo offline |
+| RCA-S2 | Kocsi heartbeat elmarad, bottle ESP is offline | `KommKocsi = ROOTFAULT`, `KommKocsiEsp = CONSEQUENCE`, ha nincs sajat mért hibajele | A gyerek ESP csak akkor FAULT, ha sajat diagnózisbemenete is hibas |
 | RCA-S3 | Kocsi online, bottle ESP heartbeat elmarad | `KommKocsi = WORKING`, `KommKocsiEsp = ROOTFAULT` | Ilyenkor a bottle ESP mar kulon mert kommunikacios hiba |
-| RCA-S4 | Tartaly heartbeat elmarad | `KommTartaly = ROOTFAULT`, tartalyagi gyerekek `CONSEQUENCE` | A tartaly alatti szenzorhibak nem kerulnek kulon mert hibakent feldolgozasra offline szulonel |
+| RCA-S4 | Tartaly heartbeat elmarad | `KommTartaly = ROOTFAULT`, tartalyagi gyerekek `CONSEQUENCE`, ha nincs sajat mért hibajeluk | Offline szulo mellett csak a nem mert gyerekek kovetkezmenyek |
 | RCA-S5 | Tartaly online, `AramTartaly.Data = true` | `AramTartaly = ROOTFAULT` vagy `FAULT`, ha van magasabb mert tartalyagi hiba | Csak online szulo mellett ertelmezett kulon mert hiba |
-| RCA-S6 | RFID olvasok nem elerhetok | `KommRfidUp = ROOTFAULT`, `GyarRfidOlv = CONSEQUENCE` | A rakomanyhiba nem lehet mert hiba, ha az olvasok nem mukodnek |
+| RCA-S6 | RFID olvasok nem elerhetok | `KommRfidUp = ROOTFAULT`, `GyarRfidOlv = CONSEQUENCE`, ha `GyarRfidOlv.Data == false` | A rakomanyhiba nem lesz mert hiba, ha nincs sajat bemeneti hibaja |
 | RCA-S7 | RFID olvasok mukodnek, rakomany nem egyezik | `GyarRfidOlv = ROOTFAULT` | Valodi gyartasi/olvasasi hiba kommunikacios hiba nelkul |
-| RCA-S8 | MQTT / `KommKozpont` hiba | `KommKozpont = ROOTFAULT`, also kommunikacios agak `CONSEQUENCE` | A service koran visszater, az also szintu jelek nem lesznek kulon mert hibak |
+| RCA-S8 | MQTT / `KommKozpont` hiba, also szinten nincs sajat `Data == true` hiba | `KommKozpont = ROOTFAULT`, also kommunikacios agak `CONSEQUENCE` | A nem mert also hibak kovetkezmenyek maradnak |
 | RCA-S9 | Hiba megszunik egy teljes service ciklus utan | Nincs `ROOTFAULT`, nincs `CONSEQUENCE`, LED kikapcsol | A teljes torlest a `DiagnoseDashboardService.ResetFaultStatuses()` es az RCA ujraszamolasa egyutt vegzi |
 | RCA-S10 | Heartbeat 15 masodpercnel ritkabb | Az erintett eszkoz `FAULT` vagy `ROOTFAULT` lesz | Az eszkozoknek 15 masodpercen belul kell allapotot kuldeniuk |
+| RCA-S11 | `KommKozpont.Data = true` es `GyarRfidOlv.Data = true` | `KommKozpont = ROOTFAULT`, `GyarRfidOlv = FAULT`, a koztes nem mert elemek `CONSEQUENCE` | A mert also hibat nem irhatja felul a propagation |
+| RCA-S12 | `KommKocsi` offline es `AramKocsi.Data = true` | `KommKocsi = ROOTFAULT`, `AramKocsi = FAULT`, a tobbi nem mert kocsiagi gyerek `CONSEQUENCE` | Offline szulo mellett is megmarad a sajat mért hiba |
+| RCA-S13 | `KommRfidUp.Data = true` es `GyarRfidOlv.Data = true` | `KommRfidUp = ROOTFAULT`, `GyarRfidOlv = FAULT` | Az RFID olvasasi hiba nem valhat consequence-sze, ha sajat bemeneti hibaja van |
 
 ## 3. Kezi ellenorzes javasolt menete
 
