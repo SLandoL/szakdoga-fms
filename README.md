@@ -88,18 +88,31 @@ HTTPS portok:
 
 ## 4. Gyors indítás
 
-### Fizikai előkészítés
+### 4.1. Demo indítási sorrend
+
+A bemutató indításakor ezt a sorrendet kövesd:
+
+0. Bizonyosodj meg róla, hogy mind a 6 fizikai kapcsoló fel van kapcsolva.
+1. Helyezd áram alá a rendszert a demó jobb hátsó oldalán, az asztal aljára rögzített főkapcsolóval.
+2. Kapcsold be a demóhoz tartozó PC-t. Az MQTT broker, az RFID-olvasók és a kommunikációs központ automatikusan elindulnak.
+3. Jelentkezz be a PC-re, majd várd meg, amíg a demóhoz tartozó programok elindulnak. Ha valamelyik program külön bejelentkezést kér, abba is jelentkezz be.
+4. A 3 kocsiirányításért felelős kapcsolót kapcsold le.
+5. Rakd a kocsit a tartály mögötti vonalra. A haladási irány az óramutató járásával ellentétes legyen. Ellenőrizd, hogy az RFID-kártya a helyén van-e a kocsi oldalán, majd kapcsold be a kocsit.
+6. Amint a kocsi elindult és a heartbeatek megérkeznek, minden induláskori hibának el kell tűnnie a dashboardról.
+
+Ha a 6. lépés után marad aktív hiba, először ne generálj új hibát, hanem ellenőrizd az MQTT kapcsolatot, a kocsi bekapcsolását, az RFID-kártyát és a kapcsolók állását.
+
+### 4.2. Fizikai előkészítés
 
 1. Tedd szabaddá a kocsi pályáját, és ellenőrizd a kábeleket.
-2. Indítsd el az MQTT brokert.
-3. Kapcsold be a Tank ESP-t, Bottle ESP-t, RFID ESP-t és a kocsi Raspberry Pi-jét.
-4. Ellenőrizd, hogy a demo PC eléri a `192.168.0.100` címet.
-5. Készítsd elő az RFID-kártyákat. Az ajánlott adattartalom: `XXX<rakományazonosító>XXX`.
-6. Ellenőrizd, hogy a StopLeft, StopRight és ResetPos kapcsolók alapállásban vannak-e.
+2. Ellenőrizd, hogy a tartály, a kocsi, az RFID-olvasók és a kommunikációs központ áramellátása rendelkezésre áll.
+3. Készítsd elő az RFID-kártyákat. Az ajánlott adattartalom: `XXX<rakományazonosító>XXX`.
+4. Ellenőrizd, hogy a kocsi oldalán lévő RFID-kártya stabilan a helyén van-e.
+5. Ellenőrizd, hogy a fizikai kapcsolók ismert állapotban vannak-e, mielőtt a kocsit elindítod.
 
-### Szoftverek indítása
+### 4.3. Szoftverek indítása
 
-Nyisd meg Visual Studio 2022-ben:
+A demó PC-n a szükséges programok automatikusan indulnak. Ha manuálisan kell őket indítani vagy fejlesztői gépen futtatod a rendszert, Visual Studio 2022-ben nyisd meg:
 
 ```text
 FMS/FMS.sln
@@ -129,7 +142,7 @@ Solution → Properties → Multiple startup projects
 
 Mind a négy projektnél válaszd a `Start` műveletet.
 
-### Kocsi vezérlőkód indítása
+### 4.4. Kocsi vezérlőkód indítása
 
 A frissített, bemutatóhoz használandó kocsioldali fájl:
 
@@ -148,7 +161,7 @@ Connected to MQTT broker: 192.168.0.100
 
 A hardverobjektumok inicializálása az MQTT kapcsolat előtt történik, így egy korán érkező MQTT-üzenet nem tud még nem inicializált `fw`, `bw` vagy `lf` objektumra hivatkozni.
 
-### MQTT-kapcsolat
+### 4.5. MQTT-kapcsolat
 
 1. Nyisd meg a FactorySimulation felületet.
 2. Jelentkezz be, ha szükséges.
@@ -156,10 +169,15 @@ A hardverobjektumok inicializálása az MQTT kapcsolat előtt történik, így e
 4. Várd meg az **„Elérhető az MQTT Broker!”** visszajelzést.
 5. Nyisd meg külön böngészőfülön a Control Panelt, a Digital Factory nézetet és a dashboardot.
 
-### Bemutatás előtti ellenőrzőlista
+### 4.6. Bemutatás előtti ellenőrzőlista
 
+- mind a 6 fizikai kapcsoló ismert állapotban van;
+- a 3 kocsiirányító kapcsoló a kocsi indítása előtt a kívánt állapotban van;
+- a kocsi a tartály mögötti vonalon áll;
+- a haladási irány az óramutató járásával ellentétes;
+- a kocsi oldalán lévő RFID-kártya a helyén van;
 - `Pause` kikapcsolva;
-- minden hibagomb alapállapotban;
+- minden szoftveres hibagomb alapállapotban;
 - kocsisebesség kezdetben 30–50%;
 - MQTT-kapcsolat aktív;
 - a dashboardon nincs gyökérhiba;
@@ -244,9 +262,15 @@ Debug switch event: next stop forced to factory
 
 A ResetPos használata nem hoz létre új dashboard hibát, nem jelenik meg új FaultData elemként, és nem változtatja meg az RCA vagy RFID logikát.
 
+### Köztes megállók kapcsolói
+
+A két köztes megálló kapcsoló a bal és jobb oldali köztes megállásokat kapcsolja ki vagy be. Ne kapcsolgasd őket ész nélkül, és lehetőleg mindig csak egyet kapcsolj egyszerre, mert az MQTT-üzenet lassabban érkezhet meg, mint egy webes gombnyomásnál.
+
+Optimális működéshez a kapcsolót legalább egy megállóval azelőtt állítsd át, hogy szeretnéd, hogy a kocsi ott megálljon vagy ne álljon meg.
+
 ---
 
-## 8. Kocsi MQTT parancsok
+## 8. Kocsi MQTT parancsok és vezérlés
 
 | Parancs | Jelentés |
 | --- | --- |
@@ -272,23 +296,67 @@ Publishing car-esp start, rc = ...
 
 Ha a kocsi az első megálló után nem indul tovább, először ezeket a topicokat és konzolüzeneteket ellenőrizd.
 
----
-
-## 9. Ajánlott bemutatási forgatókönyv
-
-1. **Normál állapot:** Control Panel, mozgó kocsi, Digital Factory és zöld dashboard.
-2. **Egyszerű hiba:** például szalagszenzor hiba, majd gyökérhiba-kijelölés és kocsi megállása.
-3. **Visszaállítás:** ugyanazt a hibát kapcsold ki, várj 1–2 másodpercet, szükség esetén Wake Up.
-4. **Magasabb szintű hiba:** Rendszer hiba, majd gyökérhiba és következményállapotok bemutatása.
-5. **RFID-egyezés:** azonos kártyákkal két azonos rakományazonosító.
-6. **RFID-eltérés:** egyik kártya cseréje, rakományhiba bemutatása.
-7. **RFID-kiesés:** RFID ESP vagy reader kikapcsolása, majd legalább 6 másodperc várakozás.
-8. **ResetPos debug:** ResetPos átváltása, következő megálló gyár, diagnosztikai hiba nélkül.
-9. **Lezárás:** minden hiba visszaállítása és normál dashboard ellenőrzése.
+A FactorySimulation felületén sebességet állítani és Pause-olni csak két megálló között érdemes. Megállóban vagy állomási várakozás közben a kocsi éppen másik kész jelre várhat, ezért a Pause/Wake Up működése ilyenkor félrevezetőnek tűnhet.
 
 ---
 
-## 10. RFID-kártyák
+## 9. Hibák generálása demó közben
+
+Három fő módon lehet látványos hibát generálni.
+
+### 9.1. Szoftveres hibák a FactorySimulation felületén
+
+A FactorySimulation / Control Panel felületén több hiba generálható a gombok segítségével. Ezek alkalmasak arra, hogy megmutasd:
+
+- a hiba megjelenését a dashboardon;
+- a mért hiba és a gyökérhiba közötti különbséget;
+- a következményállapotokat;
+- a kocsi megállását és a hiba visszaállítása utáni továbbindítást.
+
+### 9.2. Fizikai áramellátási hibák kapcsolókkal
+
+Kapcsolókkal megszüntethető az RFID-olvasók vagy a tartály áramellátása. Ez jó fizikai hibademó, mert nem csak szoftveres állapotot állítasz, hanem tényleges eszközkiesést okozol.
+
+Fontos figyelmeztetés: ha a tartály nincs áram alatt, akkor a kocsi kapcsolói sem működnek. A tartály áramellátásának visszakapcsolása előtt a kocsi kapcsolói legyenek felkapcsolva, különben az eszköz nem megfelelő módban bootolhat.
+
+### 9.3. RFID-kártya nem egyezés
+
+A rendszer először a tartálynál olvas RFID-kártyát, majd a raktárnál, és az egyezést ebben a folyamatban ellenőrzi. Ha RFID eltérést akarsz generálni, a kártyát a tartály- és a raktármegálló között kell kicserélni.
+
+RFID-kártyák írásához Androidon az **NFC Tools** app használható. A követendő formátum:
+
+```text
+XXX<rakománynév>XXX
+```
+
+Például:
+
+```text
+XXXsorXXX
+XXXkekXXX
+XXXtesztXXX
+```
+
+Az ékezetes karaktereket érdemes kerülni, mert az UTF-8 kódolás miatt több bájtot foglalhatnak.
+
+---
+
+## 10. Ajánlott bemutatási forgatókönyv
+
+1. **Indítás:** kövesd a 4.1. pont indítási sorrendjét. Várd meg, amíg a kocsi elindul, és a dashboardról eltűnnek az indulási hibák.
+2. **Normál állapot:** mutasd meg a Control Panelt, a mozgó kocsit, a Digital Factory nézetet és a zöld dashboardot.
+3. **Egyszerű szoftveres hiba:** aktiválj például szalagszenzor hibát a FactorySimulation felületén. Mutasd meg a gyökérhiba-kijelölést és a kocsi megállását.
+4. **Visszaállítás:** ugyanazt a hibát kapcsold ki, várj 1–2 másodpercet, majd szükség esetén Wake Up. Ha a kocsi állomáson várakozik, ellenőrizd, hogy nem egy másik kész jelre vár-e.
+5. **Fizikai áramellátási hiba:** kapcsold le például az RFID-olvasó áramellátását, várd meg a timeoutot, majd mutasd meg a dashboardon a kommunikációs vagy olvasóhibát.
+6. **RFID-egyezés:** azonos kártyákkal mutasd meg a két rakományazonosítót és az egyezést.
+7. **RFID-eltérés:** a tartály és a raktár közötti szakaszon cseréld ki a kártyát, majd mutasd meg a rakományhibát.
+8. **Köztes megálló kapcsolók:** legfeljebb egy kapcsolót állíts egyszerre, és legalább egy megállóval korábban, mint ahol a hatását látni szeretnéd.
+9. **ResetPos debug:** váltsd át a ResetPos kapcsolót, majd mutasd meg, hogy a következő megálló gyár lesz, de nem keletkezik diagnosztikai hiba.
+10. **Lezárás:** állíts vissza minden szoftveres hibát és fizikai kapcsolót, majd ellenőrizd a normál dashboardot.
+
+---
+
+## 11. RFID-kártyák
 
 Ajánlott formátum:
 
@@ -298,11 +366,11 @@ XXX<cargoId>XXX
 
 Az `XXX` kezdő- és végmarker segít a hasznos rakományazonosító kiemelésében. Az ékezetes karakterek UTF-8 kódolása több bájtot használhat, ezért rövid azonosítókat használj.
 
-A bemutatóhoz legyen kéznél két azonos tartalmú kártya és legalább egy eltérő tartalmú kártya.
+A bemutatóhoz legyen kéznél két azonos tartalmú kártya és legalább egy eltérő tartalmú kártya. Androidon az **NFC Tools** appal egyszerűen újraírhatók vagy formázhatók ezek a kártyák.
 
 ---
 
-## 11. Gyors hibaelhárítás
+## 12. Gyors hibaelhárítás
 
 ### A Control Panel nem működik vagy a gombok le vannak tiltva
 
@@ -320,11 +388,19 @@ A bemutatóhoz legyen kéznél két azonos tartalmú kártya és legalább egy e
 4. Várj legalább egy frissítési ciklust.
 5. RFID esetén várd meg a 6 másodperces timeoutot és az új heartbeatet.
 
+### Indítás után hibák maradnak a dashboardon
+
+1. Ellenőrizd, hogy mind a 6 fizikai kapcsoló ismert állapotban van-e.
+2. Ellenőrizd, hogy a kocsi be van-e kapcsolva és a tartály mögötti vonalon áll-e.
+3. Ellenőrizd, hogy az RFID-kártya a kocsi oldalán a helyén van-e.
+4. Várd meg, amíg a kocsi heartbeatje és az RFID-állapotok beérkeznek.
+5. Ellenőrizd, hogy a tartály és az RFID-olvasók áramellátása fel van-e kapcsolva.
+
 ### A kocsi nem indul el
 
 1. Kapcsolj ki minden aktív hibát és a Pause állapotot.
 2. Állíts be 30–50% sebességet.
-3. Nyomd meg a Wake Up gombot.
+3. Nyomd meg a Wake Up gombot, de csak akkor, ha a kocsi két megálló között van vagy ténylegesen Pause állapotból kell feloldani.
 4. MQTT Explorerrel ellenőrizd a `carManagement` topicot.
 5. A kocsi konzolján ellenőrizd, hogy nincs-e `MQTT callback error` vagy `Fatal car controller error`.
 
@@ -335,6 +411,13 @@ A bemutatóhoz legyen kéznél két azonos tartalmú kártya és legalább egy e
 3. A kocsi konzolján keresd a `Flags:` és `Both stations ready, restarting car` üzeneteket.
 4. Ha csak az egyik kész jel érkezik meg, akkor a kocsi helyesen várakozik a másik állomásra.
 5. Ellenőrizd, hogy nincs-e aktív Pause vagy szimulált hiba.
+
+### A köztes megállók nem úgy működnek, ahogy vártad
+
+1. Ne kapcsolgasd egyszerre a két megállókapcsolót.
+2. Kapcsolás után várj, mert a fizikai kapcsoló MQTT-üzenete lassabban érkezhet meg.
+3. A kapcsolót legalább egy megállóval azelőtt állítsd át, ahol a hatást látni szeretnéd.
+4. Ellenőrizd MQTT Explorerben a `StopLeft` és `StopRight` topicokat.
 
 ### A ResetPos nem úgy viselkedik, ahogy vártad
 
@@ -367,7 +450,7 @@ A bemutatóhoz legyen kéznél két azonos tartalmú kártya és legalább egy e
 
 ---
 
-## 12. Fontos konfigurációs megjegyzések
+## 13. Fontos konfigurációs megjegyzések
 
 - A demóhoz használandó kocsioldali fájl: `Kocsi/example/car.py`.
 - A gyökérkönyvtárban lévő régi `car.py` nem a legfrissebb, stabilizált kocsi vezérlőkód.
@@ -392,7 +475,7 @@ kapcsolók pin-kiosztása
 
 ---
 
-## 13. Fő MQTT topicok
+## 14. Fő MQTT topicok
 
 | Topic | Funkció |
 | --- | --- |
@@ -416,7 +499,7 @@ kapcsolók pin-kiosztása
 
 ---
 
-## 14. REST és Swagger referencia
+## 15. REST és Swagger referencia
 
 Fő FactoryService útvonalak:
 
@@ -443,7 +526,7 @@ A teljes és aktuális végpontlista mindig a Swagger felületen ellenőrizendő
 
 ---
 
-## 15. Bemutató lezárása
+## 16. Bemutató lezárása
 
 1. Kapcsold ki az összes szimulált hibát.
 2. Kapcsold ki a `Pause` állapotot.
@@ -455,7 +538,7 @@ A teljes és aktuális végpontlista mindig a Swagger felületen ellenőrizendő
 
 ---
 
-## 16. További dokumentáció
+## 17. További dokumentáció
 
 - [Gyökérhiba-elemzés fejlesztési napló](docs/development-log-root-cause-analyzer.md)
 - [Gyökérhiba-elemzés tesztterv](docs/root-cause-analyzer-test-plan.md)
